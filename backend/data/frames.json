@@ -1,0 +1,2519 @@
+[
+  {
+    "id": "frame_001",
+    "name": "Gold Square",
+    "brand": "SmartFrame Elite",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 122,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 53,
+    "temple_length_mm": 140,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_001.svg"
+  },
+  {
+    "id": "frame_002",
+    "name": "Tortoise Round",
+    "brand": "SmartFrame Classic",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 127,
+    "bridge_width_mm": 21,
+    "lens_width_mm": 53,
+    "temple_length_mm": 135,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_002.svg"
+  },
+  {
+    "id": "frame_003",
+    "name": "Tortoise Rectangle",
+    "brand": "SmartFrame Elite",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 127,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 54,
+    "temple_length_mm": 145,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_003.svg"
+  },
+  {
+    "id": "frame_004",
+    "name": "Silver Geometric",
+    "brand": "SmartFrame Elite",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 129,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 56,
+    "temple_length_mm": 135,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_004.svg"
+  },
+  {
+    "id": "frame_005",
+    "name": "Red Square",
+    "brand": "SmartFrame Elite",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 119,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 50,
+    "temple_length_mm": 140,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_005.svg"
+  },
+  {
+    "id": "frame_006",
+    "name": "Tortoise Oval",
+    "brand": "SmartFrame Classic",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 120,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 51,
+    "temple_length_mm": 140,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_006.svg"
+  },
+  {
+    "id": "frame_007",
+    "name": "Blue Oval",
+    "brand": "SmartFrame Elite",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 128,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 56,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_007.svg"
+  },
+  {
+    "id": "frame_008",
+    "name": "Blue Round",
+    "brand": "SmartFrame Sport",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 115,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 49,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_008.svg"
+  },
+  {
+    "id": "frame_009",
+    "name": "Tortoise Aviator",
+    "brand": "SmartFrame Classic",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 131,
+    "bridge_width_mm": 21,
+    "lens_width_mm": 55,
+    "temple_length_mm": 145,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_009.svg"
+  },
+  {
+    "id": "frame_010",
+    "name": "Clear Aviator",
+    "brand": "SmartFrame Premium",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 127,
+    "bridge_width_mm": 21,
+    "lens_width_mm": 53,
+    "temple_length_mm": 145,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_010.svg"
+  },
+  {
+    "id": "frame_011",
+    "name": "Gold Square",
+    "brand": "SmartFrame Premium",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 114,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_011.svg"
+  },
+  {
+    "id": "frame_012",
+    "name": "Gold Round",
+    "brand": "SmartFrame Classic",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 116,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_012.svg"
+  },
+  {
+    "id": "frame_013",
+    "name": "Gold Square",
+    "brand": "SmartFrame Premium",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 126,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 54,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_013.svg"
+  },
+  {
+    "id": "frame_014",
+    "name": "Black Square",
+    "brand": "SmartFrame Sport",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 134,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 56,
+    "temple_length_mm": 140,
+    "color": "Black",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_014.svg"
+  },
+  {
+    "id": "frame_015",
+    "name": "Gold Cat-eye",
+    "brand": "SmartFrame Sport",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 116,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 48,
+    "temple_length_mm": 140,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_015.svg"
+  },
+  {
+    "id": "frame_016",
+    "name": "Red Rectangle",
+    "brand": "SmartFrame Premium",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 131,
+    "bridge_width_mm": 21,
+    "lens_width_mm": 55,
+    "temple_length_mm": 140,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_016.svg"
+  },
+  {
+    "id": "frame_017",
+    "name": "Gold Geometric",
+    "brand": "SmartFrame Sport",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 118,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 50,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_017.svg"
+  },
+  {
+    "id": "frame_018",
+    "name": "Gold Rectangle",
+    "brand": "SmartFrame Classic",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 119,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 51,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_018.svg"
+  },
+  {
+    "id": "frame_019",
+    "name": "Silver Square",
+    "brand": "SmartFrame Premium",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 124,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 52,
+    "temple_length_mm": 140,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_019.svg"
+  },
+  {
+    "id": "frame_020",
+    "name": "Silver Aviator",
+    "brand": "SmartFrame Sport",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 120,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 49,
+    "temple_length_mm": 140,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_020.svg"
+  },
+  {
+    "id": "frame_021",
+    "name": "Clear Aviator",
+    "brand": "SmartFrame Classic",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 119,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 50,
+    "temple_length_mm": 135,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_021.svg"
+  },
+  {
+    "id": "frame_022",
+    "name": "Tortoise Aviator",
+    "brand": "SmartFrame Sport",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 129,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 56,
+    "temple_length_mm": 145,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_022.svg"
+  },
+  {
+    "id": "frame_023",
+    "name": "Clear Square",
+    "brand": "SmartFrame Premium",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 114,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_023.svg"
+  },
+  {
+    "id": "frame_024",
+    "name": "Clear Cat-eye",
+    "brand": "SmartFrame Premium",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 124,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 51,
+    "temple_length_mm": 135,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_024.svg"
+  },
+  {
+    "id": "frame_025",
+    "name": "Silver Geometric",
+    "brand": "SmartFrame Sport",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 116,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 50,
+    "temple_length_mm": 145,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 999,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_025.svg"
+  },
+  {
+    "id": "frame_026",
+    "name": "Tortoise Oval",
+    "brand": "SmartFrame Elite",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 114,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 49,
+    "temple_length_mm": 145,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_026.svg"
+  },
+  {
+    "id": "frame_027",
+    "name": "Blue Geometric",
+    "brand": "SmartFrame Elite",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 120,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 52,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_027.svg"
+  },
+  {
+    "id": "frame_028",
+    "name": "Clear Oval",
+    "brand": "SmartFrame Premium",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 126,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 52,
+    "temple_length_mm": 135,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_028.svg"
+  },
+  {
+    "id": "frame_029",
+    "name": "Tortoise Square",
+    "brand": "SmartFrame Elite",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 118,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 50,
+    "temple_length_mm": 145,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_029.svg"
+  },
+  {
+    "id": "frame_030",
+    "name": "Blue Aviator",
+    "brand": "SmartFrame Classic",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 122,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 52,
+    "temple_length_mm": 140,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_030.svg"
+  },
+  {
+    "id": "frame_031",
+    "name": "Gold Cat-eye",
+    "brand": "SmartFrame Elite",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 115,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_031.svg"
+  },
+  {
+    "id": "frame_032",
+    "name": "Clear Square",
+    "brand": "SmartFrame Sport",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 114,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 49,
+    "temple_length_mm": 135,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_032.svg"
+  },
+  {
+    "id": "frame_033",
+    "name": "Blue Geometric",
+    "brand": "SmartFrame Premium",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 124,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 52,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_033.svg"
+  },
+  {
+    "id": "frame_034",
+    "name": "Black Cat-eye",
+    "brand": "SmartFrame Classic",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 130,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 56,
+    "temple_length_mm": 140,
+    "color": "Black",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_034.svg"
+  },
+  {
+    "id": "frame_035",
+    "name": "Red Oval",
+    "brand": "SmartFrame Elite",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 117,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 50,
+    "temple_length_mm": 135,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_035.svg"
+  },
+  {
+    "id": "frame_036",
+    "name": "Clear Oval",
+    "brand": "SmartFrame Sport",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 126,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 53,
+    "temple_length_mm": 140,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_036.svg"
+  },
+  {
+    "id": "frame_037",
+    "name": "Blue Aviator",
+    "brand": "SmartFrame Premium",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 124,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 53,
+    "temple_length_mm": 140,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_037.svg"
+  },
+  {
+    "id": "frame_038",
+    "name": "Clear Square",
+    "brand": "SmartFrame Premium",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 130,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 56,
+    "temple_length_mm": 145,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_038.svg"
+  },
+  {
+    "id": "frame_039",
+    "name": "Clear Square",
+    "brand": "SmartFrame Classic",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 128,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 56,
+    "temple_length_mm": 140,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_039.svg"
+  },
+  {
+    "id": "frame_040",
+    "name": "Blue Aviator",
+    "brand": "SmartFrame Elite",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 124,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 53,
+    "temple_length_mm": 140,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_040.svg"
+  },
+  {
+    "id": "frame_041",
+    "name": "Silver Rectangle",
+    "brand": "SmartFrame Classic",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 112,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 48,
+    "temple_length_mm": 135,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_041.svg"
+  },
+  {
+    "id": "frame_042",
+    "name": "Blue Round",
+    "brand": "SmartFrame Classic",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 119,
+    "bridge_width_mm": 21,
+    "lens_width_mm": 49,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_042.svg"
+  },
+  {
+    "id": "frame_043",
+    "name": "Clear Aviator",
+    "brand": "SmartFrame Classic",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 115,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 49,
+    "temple_length_mm": 135,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_043.svg"
+  },
+  {
+    "id": "frame_044",
+    "name": "Black Round",
+    "brand": "SmartFrame Classic",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 118,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Black",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_044.svg"
+  },
+  {
+    "id": "frame_045",
+    "name": "Silver Cat-eye",
+    "brand": "SmartFrame Sport",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 125,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 53,
+    "temple_length_mm": 135,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_045.svg"
+  },
+  {
+    "id": "frame_046",
+    "name": "Blue Aviator",
+    "brand": "SmartFrame Classic",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 134,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 56,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_046.svg"
+  },
+  {
+    "id": "frame_047",
+    "name": "Red Aviator",
+    "brand": "SmartFrame Premium",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 121,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 52,
+    "temple_length_mm": 145,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_047.svg"
+  },
+  {
+    "id": "frame_048",
+    "name": "Red Aviator",
+    "brand": "SmartFrame Elite",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 123,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 52,
+    "temple_length_mm": 145,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_048.svg"
+  },
+  {
+    "id": "frame_049",
+    "name": "Black Geometric",
+    "brand": "SmartFrame Classic",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 127,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 54,
+    "temple_length_mm": 135,
+    "color": "Black",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_049.svg"
+  },
+  {
+    "id": "frame_050",
+    "name": "Gold Cat-eye",
+    "brand": "SmartFrame Premium",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 123,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 53,
+    "temple_length_mm": 140,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_050.svg"
+  },
+  {
+    "id": "frame_051",
+    "name": "Silver Rectangle",
+    "brand": "SmartFrame Premium",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 113,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 48,
+    "temple_length_mm": 140,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_051.svg"
+  },
+  {
+    "id": "frame_052",
+    "name": "Tortoise Oval",
+    "brand": "SmartFrame Sport",
+    "category": "oval",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong"
+    ],
+    "width_mm": 123,
+    "bridge_width_mm": 17,
+    "lens_width_mm": 53,
+    "temple_length_mm": 135,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_052.svg"
+  },
+  {
+    "id": "frame_053",
+    "name": "Clear Geometric",
+    "brand": "SmartFrame Premium",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 134,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 56,
+    "temple_length_mm": 140,
+    "color": "Clear",
+    "color_family": "neutral",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_053.svg"
+  },
+  {
+    "id": "frame_054",
+    "name": "Tortoise Geometric",
+    "brand": "SmartFrame Elite",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 126,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 53,
+    "temple_length_mm": 145,
+    "color": "Tortoise",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_054.svg"
+  },
+  {
+    "id": "frame_055",
+    "name": "Gold Rectangle",
+    "brand": "SmartFrame Sport",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 124,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 52,
+    "temple_length_mm": 145,
+    "color": "Gold",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_055.svg"
+  },
+  {
+    "id": "frame_056",
+    "name": "Blue Geometric",
+    "brand": "SmartFrame Classic",
+    "category": "geometric",
+    "shape_compatibility": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round",
+      "Square"
+    ],
+    "width_mm": 129,
+    "bridge_width_mm": 19,
+    "lens_width_mm": 55,
+    "temple_length_mm": 135,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_056.svg"
+  },
+  {
+    "id": "frame_057",
+    "name": "Blue Round",
+    "brand": "SmartFrame Elite",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 134,
+    "bridge_width_mm": 22,
+    "lens_width_mm": 56,
+    "temple_length_mm": 140,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_057.svg"
+  },
+  {
+    "id": "frame_058",
+    "name": "Blue Aviator",
+    "brand": "SmartFrame Classic",
+    "category": "aviator",
+    "shape_compatibility": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Heart",
+      "Oblong",
+      "Oval"
+    ],
+    "width_mm": 125,
+    "bridge_width_mm": 21,
+    "lens_width_mm": 52,
+    "temple_length_mm": 140,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_058.svg"
+  },
+  {
+    "id": "frame_059",
+    "name": "Blue Round",
+    "brand": "SmartFrame Classic",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 120,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 52,
+    "temple_length_mm": 145,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_059.svg"
+  },
+  {
+    "id": "frame_060",
+    "name": "Blue Round",
+    "brand": "SmartFrame Sport",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 116,
+    "bridge_width_mm": 16,
+    "lens_width_mm": 50,
+    "temple_length_mm": 135,
+    "color": "Blue",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1999,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_060.svg"
+  },
+  {
+    "id": "frame_061",
+    "name": "Silver Rectangle",
+    "brand": "SmartFrame Classic",
+    "category": "rectangle",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 118,
+    "bridge_width_mm": 20,
+    "lens_width_mm": 49,
+    "temple_length_mm": 135,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": false,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_061.svg"
+  },
+  {
+    "id": "frame_062",
+    "name": "Red Cat-eye",
+    "brand": "SmartFrame Elite",
+    "category": "cat-eye",
+    "shape_compatibility": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Round",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 114,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 2499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_062.svg"
+  },
+  {
+    "id": "frame_063",
+    "name": "Red Square",
+    "brand": "SmartFrame Elite",
+    "category": "square",
+    "shape_compatibility": [
+      "Oval",
+      "Round"
+    ],
+    "recommended_for_face_shapes": [
+      "Oval",
+      "Round"
+    ],
+    "width_mm": 114,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 48,
+    "temple_length_mm": 145,
+    "color": "Red",
+    "color_family": "warm",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "warm",
+      "neutral"
+    ],
+    "price": 1499,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_063.svg"
+  },
+  {
+    "id": "frame_064",
+    "name": "Silver Round",
+    "brand": "SmartFrame Sport",
+    "category": "round",
+    "shape_compatibility": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "recommended_for_face_shapes": [
+      "Square",
+      "Oblong",
+      "Heart",
+      "Oval"
+    ],
+    "width_mm": 130,
+    "bridge_width_mm": 18,
+    "lens_width_mm": 56,
+    "temple_length_mm": 140,
+    "color": "Silver",
+    "color_family": "cool",
+    "suitable_skin_tones": [
+      "fair",
+      "medium",
+      "deep"
+    ],
+    "suitable_undertones": [
+      "cool",
+      "neutral"
+    ],
+    "price": 2999,
+    "currency": "INR",
+    "in_stock": true,
+    "store_ids": [
+      "store_001",
+      "store_002"
+    ],
+    "image": "/frames/frame_064.svg"
+  }
+]

@@ -1,0 +1,4 @@
+﻿import re
+with open('frontend/src/App.jsx', 'r', encoding='utf-8') as f: content = f.read()
+content = re.sub(r'<div style=\{\{marginBottom: \'1rem\', fontSize: \'0.9rem\', color: \'var\(--text-muted\)\'\}\}>\s*IPD Fit: \{frame\.ipd_fit_score == null \? \'Unavailable\' : frame\.ipd_fit_score > 85 \? \'Excellent\' : frame\.ipd_fit_score > 70 \? \'Good\' : \'Adequate\'\}\s*</div>\s*<div style=\{\{fontStyle: \'italic\', fontSize: \'0.9rem\', lineHeight: \'1.4\', background: \'rgba\(0,0,0,0\.03\)\', padding: \'1rem\', borderRadius: \'8px\'\}\}>\s*\"\{frame\.reason\}\"\s*</div>', r'{frame.ipd_fit_score != null && (<div style={{marginBottom: \'1rem\', fontSize: \'0.9rem\', color: \'var(--text-muted)\'}}>IPD Fit: {frame.ipd_fit_score > 85 ? \'Excellent\' : frame.ipd_fit_score > 70 ? \'Good\' : \'Adequate\'}</div>)}', content)
+with open('frontend/src/App.jsx', 'w', encoding='utf-8') as f: f.write(content)
