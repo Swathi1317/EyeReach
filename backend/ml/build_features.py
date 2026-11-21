@@ -7,6 +7,13 @@ import numpy as np
 import mediapipe as mp
 import logging
 from typing import Optional, Dict, Tuple, List
+from PIL import Image
+
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except ImportError:
+    pass
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -57,8 +64,12 @@ class FaceFeatureExtractor:
     def process_image(self, image_path: str) -> Optional[Dict[str, float]]:
         image = cv2.imread(image_path)
         if image is None:
-            logger.error(f"Failed to read image: {image_path}")
-            return None
+            try:
+                pil_img = Image.open(image_path).convert("RGB")
+                image = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            except Exception as e:
+                logger.error(f"Failed to read image {image_path}: {e}")
+                return None
         
         # Resize if larger than 1280
         h, w = image.shape[:2]

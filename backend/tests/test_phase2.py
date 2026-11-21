@@ -114,3 +114,30 @@ def test_api_phase2_valid_image():
     assert response.status_code == 200
     res = response.json()
     assert "quality" in res
+
+def test_ipd_reference_card_calibration():
+    # Mock landmarks with distance 60 px
+    landmarks = create_mock_landmarks(iris_dist_px=60.0, iris_dia_px=10)
+    # Reference object: card 85.6 mm width spanning 80 px => mm_per_px = 85.6 / 80 = 1.07
+    result = calculate_ipd(landmarks, reference_width_mm=85.6, reference_width_px=80.0)
+    assert result["status"] == "valid"
+    assert result["method"] == "reference-calibrated"
+    assert result["calibration_source"] == "reference_object"
+    assert result["uncertainty_mm"] == 0.5
+    assert np.isclose(result["ipd_mm"], 64.2, atol=0.1)
+
+def test_ipd_turned_head_pose_rejected():
+    landmarks = create_mock_landmarks(iris_dist_px=50.0, iris_dia_px=10)
+    # Make right iris significantly smaller due to perspective foreshortening
+    cx_r = landmarks[473][0]
+    cy_r = landmarks[473][1]
+    small_dia = 5.0
+    landmarks[474] = [cx_r - small_dia/2, cy_r]
+    landmarks[475] = [cx_r, cy_r - small_dia/2]
+    landmarks[476] = [cx_r + small_dia/2, cy_r]
+    landmarks[477] = [cx_r, cy_r + small_dia/2]
+    
+    result = calculate_ipd(landmarks)
+    assert result["status"] == "invalid"
+    assert "turned_head_pose" in result["reasons"]
+

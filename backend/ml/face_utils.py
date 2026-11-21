@@ -94,38 +94,52 @@ class SharedFaceAnalyzer:
             result["quality"]["status"] = "invalid"
             result["quality"]["reasons"].append("face_too_small")
             
-        # Check head pose (strict heuristic for ~8 deg)
+        # Landmark points for pose analysis
         nose = landmarks[1]
-        left_eye = landmarks[33]
-        right_eye = landmarks[263]
-        
-        # Yaw
-        mid_x = (left_cheek.x + right_cheek.x) / 2.0
-        face_w = abs(right_cheek.x - left_cheek.x)
-        if abs(nose.x - mid_x) > face_w * 0.06:  # approx < 8 degrees
-            result["quality"]["status"] = "invalid"
-            result["quality"]["reasons"].append("excessive_head_pose")
-            
-        # Roll
-        import math
-        dy = right_eye.y - left_eye.y
-        dx = right_eye.x - left_eye.x
-        roll_angle = abs(math.degrees(math.atan2(dy, dx)))
-        if roll_angle > 6.0:
-            result["quality"]["status"] = "invalid"
-            result["quality"]["reasons"].append("excessive_head_pose")
-            
-        # Pitch (rough heuristic comparing eye-nose vs nose-chin ratio)
+        right_eye = landmarks[33]   # Anatomical right outer eye corner
+        left_eye = landmarks[263]   # Anatomical left outer eye corner
         chin = landmarks[152]
+        forehead = landmarks[10]
+
+        # 1. Face Centering (nose center between 0.30 and 0.70 normalized frame width)
+        if nose.x < 0.30 or nose.x > 0.70:
+            result["quality"]["status"] = "invalid"
+            result["quality"]["reasons"].append("face_not_centered")
+
+        # 2. Roll (head level / tilt): angle between eyes
+        import math
+        dy = left_eye.y - right_eye.y
+        dx = left_eye.x - right_eye.x
+        roll_angle = abs(math.degrees(math.atan2(dy, dx)))
+        if roll_angle > 8.0:
+            result["quality"]["status"] = "invalid"
+            result["quality"]["reasons"].append("head_not_level")
+            if "excessive_head_pose" not in result["quality"]["reasons"]:
+                result["quality"]["reasons"].append("excessive_head_pose")
+
+        # 3. Yaw (facing forward): rotation-invariant Euclidean eye-to-nose ratio
+        dL = math.hypot(nose.x - left_eye.x, nose.y - left_eye.y)
+        dR = math.hypot(nose.x - right_eye.x, nose.y - right_eye.y)
+        if (dL + dR) > 0:
+            eye_ratio = abs(dL - dR) / (dL + dR)
+            if eye_ratio > 0.14:  # approx > 12 degrees turned
+                result["quality"]["status"] = "invalid"
+                result["quality"]["reasons"].append("not_facing_camera")
+                if "excessive_head_pose" not in result["quality"]["reasons"]:
+                    result["quality"]["reasons"].append("excessive_head_pose")
+            
+        # 4. Pitch (camera at eye level): eye-nose vs nose-chin ratio
         eye_y = (left_eye.y + right_eye.y) / 2.0
         eye_nose_dist = nose.y - eye_y
         nose_chin_dist = chin.y - nose.y
         if nose_chin_dist > 0:
             ratio = eye_nose_dist / nose_chin_dist
-            # typical ratio is around 0.65 to 0.85
-            if ratio < 0.55 or ratio > 0.95:
+            # typical ratio is around 0.55 to 0.95
+            if ratio < 0.50 or ratio > 1.05:
                 result["quality"]["status"] = "invalid"
-                result["quality"]["reasons"].append("excessive_head_pose")
+                result["quality"]["reasons"].append("head_not_level")
+                if "excessive_head_pose" not in result["quality"]["reasons"]:
+                    result["quality"]["reasons"].append("excessive_head_pose")
             
         if len(result["quality"]["reasons"]) == 0:
             result["quality"]["status"] = "valid"
@@ -137,6 +151,38 @@ class SharedFaceAnalyzer:
         result["landmarks"] = np.array(mapped_landmarks)
         
         return result
+
+
+def get_capture_guidance_message(quality_dict: Dict) -> str:
+    """
+    Returns user-friendly capture guidance message according to SmartFrame AI Phase 1 specifications.
+    """
+    if quality_dict.get("status") == "valid":
+        return "Face detected. You can continue."
+    
+    reasons = quality_dict.get("reasons", [])
+    if "no_face" in reasons:
+        return "Face not detected. Please position your face in the frame."
+    if "not_facing_camera" in reasons:
+        return "Please face the camera directly."
+    if "head_not_level" in reasons:
+        return "Keep your head level and try again."
+    if "excessive_head_pose" in reasons:
+        return "Please face the camera directly."
+    if "face_not_centered" in reasons:
+        return "Keep your face centered."
+    if "face_too_small" in reasons:
+        return "Keep the face sufficiently close and clearly visible."
+    if "multiple_faces" in reasons:
+        return "Multiple faces detected. Please ensure only one person is in the frame."
+    if "too_dark" in reasons:
+        return "Lighting is too dark. Please move to a brighter area."
+    if "too_bright" in reasons:
+        return "Lighting is too harsh. Please reduce glare."
+    if "blur" in reasons:
+        return "Image is blurry. Please hold steady and try again."
+    
+    return "Please position your face directly in front of the camera and try again."
 
 # Global instance to be reused
 shared_face_analyzer = SharedFaceAnalyzer()

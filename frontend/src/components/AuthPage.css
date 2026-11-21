@@ -1,0 +1,999 @@
+/* AuthPage.css - Unique EyeReach Visual Identity (Midnight Navy, Deep Teal, Soft Aqua, Pearl White) */
+
+/* ================= KEYFRAME ANIMATIONS ================= */
+@keyframes splashHaloPulse {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 35px rgba(82, 183, 136, 0.35), inset 0 0 20px rgba(45, 106, 79, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 75px rgba(82, 183, 136, 0.65), inset 0 0 40px rgba(45, 106, 79, 0.5);
+  }
+  100% {
+    transform: scale(0.96);
+    box-shadow: 0 0 35px rgba(82, 183, 136, 0.35), inset 0 0 20px rgba(45, 106, 79, 0.3);
+  }
+}
+
+@keyframes splashRingRotateCW {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes splashRingRotateCCW {
+  from { transform: translate(-50%, -50%) rotate(360deg); }
+  to { transform: translate(-50%, -50%) rotate(0deg); }
+}
+
+@keyframes irisBreathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(13, 148, 136, 0.3), 0 0 60px rgba(45, 212, 191, 0.15);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 50px rgba(13, 148, 136, 0.5), 0 0 90px rgba(45, 212, 191, 0.3);
+  }
+}
+
+@keyframes ambientOrbit {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ================= 1. FIRST SCREEN: WELCOME / SPLASH SCREEN ================= */
+.eyereach-splash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06101e;
+  overflow: hidden;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: auto;
+}
+
+.eyereach-splash-overlay.fading {
+  opacity: 0;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+
+.eyereach-splash-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center center;
+  opacity: 0.42;
+  filter: saturate(1.3) contrast(1.1);
+}
+
+.eyereach-splash-gradient-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(13, 148, 136, 0.22) 0%, rgba(9, 21, 40, 0.88) 55%, #06101e 100%);
+}
+
+.eyereach-splash-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eyereach-splash-ring.ring-outer {
+  width: 520px;
+  height: 520px;
+  border: 1.5px dashed rgba(45, 212, 191, 0.35);
+  animation: splashRingRotateCW 40s linear infinite;
+}
+
+.eyereach-splash-ring.ring-middle {
+  width: 380px;
+  height: 380px;
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  animation: splashRingRotateCCW 28s linear infinite;
+}
+
+.eyereach-splash-ring.ring-inner {
+  width: 250px;
+  height: 250px;
+  border: 2px solid rgba(45, 212, 191, 0.45);
+  animation: splashRingRotateCW 18s linear infinite;
+}
+
+.eyereach-splash-center {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.eyereach-splash-icon-halo {
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(45, 106, 79, 0.35) 0%, rgba(27, 67, 50, 0.5) 100%);
+  border: 2px solid rgba(82, 183, 136, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.75rem;
+  animation: splashHaloPulse 2.8s ease-in-out infinite;
+  backdrop-filter: blur(10px);
+}
+
+.eyereach-splash-icon-core {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 0 16px rgba(82, 183, 136, 0.75));
+}
+
+.eyereach-splash-brand-title {
+  margin: 0;
+  font-size: 3.25rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: #ffffff;
+  text-shadow: 0 4px 25px rgba(0, 0, 0, 0.7);
+}
+
+.eyereach-splash-brand-title span {
+  color: #52b788;
+  text-shadow: 0 0 20px rgba(82, 183, 136, 0.6);
+}
+
+.eyereach-splash-accent-bar {
+  width: 72px;
+  height: 4px;
+  background: linear-gradient(90deg, #74c69d, #2d6a4f);
+  border-radius: 4px;
+  margin-top: 1rem;
+  box-shadow: 0 0 12px rgba(82, 183, 136, 0.65);
+}
+
+/* ================= 2. PAGE ROOT & AMBIENT VISUALS ================= */
+.eyereach-auth-root {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #06101e;
+  position: relative;
+  overflow-x: hidden;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: #0f172a;
+}
+
+.eyereach-iris-ambient-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center center;
+  opacity: 0.34;
+  filter: saturate(1.25) contrast(1.15);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.eyereach-iris-ambient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 35% 50%, rgba(13, 148, 136, 0.16) 0%, rgba(9, 21, 40, 0.88) 55%, #06101e 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.eyereach-optic-circle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.eyereach-optic-circle-1 {
+  width: 720px;
+  height: 720px;
+  border: 1.5px dashed rgba(45, 212, 191, 0.22);
+  top: 50%;
+  left: 28%;
+  transform: translate(-50%, -50%);
+  animation: ambientOrbit 90s linear infinite;
+}
+
+.eyereach-optic-circle-2 {
+  width: 500px;
+  height: 500px;
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  top: 50%;
+  left: 28%;
+  transform: translate(-50%, -50%);
+  animation: splashRingRotateCCW 60s linear infinite;
+}
+
+/* ================= 3. SPLIT-SCREEN CONTAINER ================= */
+.eyereach-auth-container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 1060px;
+  min-height: 620px;
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(24px);
+  border-radius: 28px;
+  box-shadow: 0 25px 65px -15px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.35);
+  display: flex;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* ================= 4. LEFT SECTION: MINIMAL & ELEGANT EYE VISUAL ================= */
+.eyereach-hero-panel {
+  flex: 0.95;
+  background: linear-gradient(155deg, #091528 0%, #0c203c 50%, #0d7665 100%);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3rem 2.5rem;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.eyereach-hero-bg-iris {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center center;
+  opacity: 0.32;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.eyereach-hero-gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, rgba(9, 21, 40, 0.82) 0%, rgba(12, 32, 60, 0.65) 50%, rgba(13, 118, 101, 0.85) 100%);
+  pointer-events: none;
+}
+
+/* Brand Header */
+.eyereach-brand-header {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 1.15rem;
+}
+
+.eyereach-brand-eye-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: radial-gradient(circle, rgba(45, 106, 79, 0.4) 0%, rgba(27, 67, 50, 0.58) 100%);
+  border: 1.8px solid rgba(82, 183, 136, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3), 0 0 18px rgba(82, 183, 136, 0.3);
+  flex-shrink: 0;
+}
+
+.eyereach-brand-title {
+  font-size: 2.15rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  line-height: 1.15;
+  color: #ffffff;
+}
+
+.eyereach-brand-title span {
+  color: #2dd4bf;
+  text-shadow: 0 0 15px rgba(45, 212, 191, 0.5);
+}
+
+.eyereach-brand-tagline {
+  margin: 0.35rem 0 0 0;
+  font-size: 0.94rem;
+  font-weight: 500;
+  color: #99f6e4;
+  letter-spacing: 0.01em;
+}
+
+/* Minimal Iris Centerpiece */
+.eyereach-minimal-iris-center {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 0;
+}
+
+.eyereach-iris-art-frame {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eyereach-iris-reticle-ring {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eyereach-iris-reticle-ring.ring-1 {
+  width: 250px;
+  height: 250px;
+  border: 1.5px dashed rgba(45, 212, 191, 0.4);
+  animation: splashRingRotateCW 36s linear infinite;
+}
+
+.eyereach-iris-reticle-ring.ring-2 {
+  width: 215px;
+  height: 215px;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  animation: splashRingRotateCCW 24s linear infinite;
+}
+
+.eyereach-iris-reticle-ring.ring-3 {
+  width: 180px;
+  height: 180px;
+  border: 1.5px solid rgba(45, 212, 191, 0.5);
+}
+
+.eyereach-iris-center-disc {
+  width: 154px;
+  height: 154px;
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid #2dd4bf;
+  box-shadow: 0 0 40px rgba(45, 212, 191, 0.55), inset 0 0 25px rgba(0, 0, 0, 0.6);
+  animation: irisBreathe 4.5s ease-in-out infinite;
+}
+
+.eyereach-iris-disc-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center center;
+  filter: saturate(1.35) contrast(1.15);
+}
+
+.eyereach-iris-disc-pupil {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #081c15;
+  border: 2px solid #2d6a4f;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.85), 0 0 16px rgba(45, 106, 79, 0.45);
+}
+
+.eyereach-pupil-twinkle {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.eyereach-pupil-twinkle.main-twinkle {
+  top: 9px;
+  left: 9px;
+  width: 8px;
+  height: 8px;
+  opacity: 0.95;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+.eyereach-pupil-twinkle.sub-twinkle {
+  bottom: 11px;
+  right: 11px;
+  width: 3.5px;
+  height: 3.5px;
+  opacity: 0.65;
+}
+
+/* Left Footer */
+.eyereach-hero-minimal-footer {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eyereach-footer-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.55rem 1.15rem;
+  background: rgba(13, 148, 136, 0.22);
+  border: 1px solid rgba(45, 212, 191, 0.35);
+  border-radius: 30px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #ccfbf1;
+  letter-spacing: 0.02em;
+  backdrop-filter: blur(8px);
+}
+
+.eyereach-pill-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2dd4bf;
+  box-shadow: 0 0 8px #2dd4bf;
+}
+
+/* ================= 5. RIGHT SECTION: LOGIN FORM ================= */
+.eyereach-form-panel {
+  flex: 1.15;
+  padding: 2.75rem 3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+/* Top Portal Toggle */
+.eyereach-portal-toggle {
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 14px;
+  margin-bottom: 1.75rem;
+  gap: 4px;
+}
+
+.eyereach-portal-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: transparent;
+  border-radius: 11px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.eyereach-portal-btn.active-teal {
+  background: #ffffff;
+  color: #0f766e;
+  box-shadow: 0 3px 10px rgba(13, 148, 136, 0.15);
+  font-weight: 700;
+}
+
+.eyereach-portal-btn.active-navy {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.15);
+  font-weight: 700;
+}
+
+/* Headings */
+.eyereach-login-heading-wrap {
+  margin-bottom: 1.6rem;
+}
+
+.eyereach-main-heading {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.45rem 0;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
+}
+
+.eyereach-sub-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+/* Alerts */
+.eyereach-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0.85rem 1.15rem;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 1.4rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.eyereach-alert.error {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.eyereach-alert.success {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.eyereach-demo-banner {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 0.86rem;
+  color: #334155;
+  margin-bottom: 1.35rem;
+}
+
+.eyereach-demo-banner code {
+  background: #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+/* Form Stack */
+.eyereach-form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.eyereach-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.eyereach-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.required-star {
+  color: #0d9488;
+}
+
+.optional-tag {
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: #64748b;
+  margin-left: 4px;
+}
+
+.eyereach-label-hint {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #64748b;
+}
+
+.eyereach-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1.8px solid #cbd5e1;
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+
+.eyereach-input-box:focus-within {
+  border-color: #0d9488;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.16);
+}
+
+.eyereach-input-box.navy-box:focus-within {
+  border-color: #0f172a;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.14);
+}
+
+.eyereach-input-icon {
+  position: absolute;
+  left: 1.1rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.eyereach-input-box:focus-within .eyereach-input-icon {
+  color: #0d9488;
+}
+
+.eyereach-input-box.navy-box:focus-within .eyereach-input-icon {
+  color: #0f172a;
+}
+
+.eyereach-input {
+  width: 100%;
+  min-height: 54px;
+  padding: 0.85rem 1.15rem 0.85rem 3.25rem;
+  border: none;
+  background: transparent;
+  font-size: 1.02rem;
+  font-weight: 500;
+  color: #0f172a;
+  border-radius: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.eyereach-input::placeholder {
+  color: #94a3b8;
+  font-size: 0.94rem;
+}
+
+.eyereach-pwd-btn {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+
+.eyereach-pwd-btn:hover {
+  color: #0f172a;
+}
+
+.eyereach-forgot-link {
+  background: none;
+  border: none;
+  color: #0d9488;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.eyereach-forgot-link:hover {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+/* ================= 6. LARGE ACTION BUTTONS ================= */
+.eyereach-action-btn {
+  width: 100%;
+  min-height: 56px;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.22s ease;
+  box-sizing: border-box;
+  margin-top: 0.4rem;
+}
+
+.eyereach-action-btn.primary-teal {
+  background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px -4px rgba(13, 148, 136, 0.45);
+}
+
+.eyereach-action-btn.primary-teal:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  box-shadow: 0 12px 26px -4px rgba(13, 148, 136, 0.6);
+  transform: translateY(-2px);
+}
+
+.eyereach-action-btn.primary-navy {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #ffffff;
+  box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.45);
+}
+
+.eyereach-action-btn.primary-navy:hover:not(:disabled) {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  box-shadow: 0 12px 26px -4px rgba(15, 23, 42, 0.6);
+  transform: translateY(-2px);
+}
+
+.eyereach-action-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Alternative Login Switcher */
+.eyereach-alt-switch-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.35rem;
+}
+
+.eyereach-alt-switch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f766e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.eyereach-alt-switch-btn:hover {
+  background: #e6fffa;
+  border-color: #2dd4bf;
+  color: #0d9488;
+  transform: translateY(-1px);
+}
+
+.eyereach-form-sub-toggle {
+  text-align: center;
+  font-size: 0.90rem;
+  color: #64748b;
+  margin-top: 0.6rem;
+}
+
+.eyereach-inline-link {
+  background: none;
+  border: none;
+  color: #0d9488;
+  font-size: 0.90rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+}
+
+.eyereach-inline-link:hover {
+  text-decoration: underline;
+}
+
+/* ================= 7. FORGOT PASSWORD MODAL ================= */
+.eyereach-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(6, 16, 30, 0.75);
+  backdrop-filter: blur(8px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: fadeIn 0.25s ease;
+}
+
+.eyereach-modal-card {
+  width: 100%;
+  max-width: 460px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 2.25rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+
+.eyereach-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.eyereach-modal-title {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.eyereach-modal-close {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
+}
+
+.eyereach-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.eyereach-modal-desc {
+  font-size: 0.94rem;
+  color: #475569;
+  line-height: 1.45;
+  margin: 0 0 1.5rem 0;
+}
+
+.eyereach-cancel-btn {
+  padding: 0.85rem 1.4rem;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.eyereach-cancel-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+/* ================= 8. RESPONSIVE MEDIA QUERIES ================= */
+@media (max-width: 900px) {
+  .eyereach-auth-container {
+    flex-direction: column;
+    max-width: 520px;
+  }
+
+  .eyereach-hero-panel {
+    padding: 2.25rem 2rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .eyereach-brand-header {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  .eyereach-minimal-iris-center {
+    padding: 1.5rem 0;
+  }
+
+  .eyereach-iris-art-frame {
+    width: 200px;
+    height: 200px;
+  }
+
+  .eyereach-iris-reticle-ring.ring-1 {
+    width: 200px;
+    height: 200px;
+  }
+
+  .eyereach-iris-reticle-ring.ring-2 {
+    width: 170px;
+    height: 170px;
+  }
+
+  .eyereach-iris-reticle-ring.ring-3 {
+    width: 140px;
+    height: 140px;
+  }
+
+  .eyereach-iris-center-disc {
+    width: 120px;
+    height: 120px;
+  }
+
+  .eyereach-form-panel {
+    padding: 2.25rem 2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .eyereach-auth-root {
+    padding: 0.75rem;
+  }
+
+  .eyereach-auth-container {
+    border-radius: 20px;
+  }
+
+  .eyereach-hero-panel {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .eyereach-form-panel {
+    padding: 1.75rem 1.25rem;
+  }
+
+  .eyereach-main-heading {
+    font-size: 1.4rem;
+  }
+
+  .eyereach-splash-brand-title {
+    font-size: 2.4rem;
+  }
+
+  .eyereach-splash-ring.ring-outer {
+    width: 320px;
+    height: 320px;
+  }
+
+  .eyereach-splash-ring.ring-middle {
+    width: 250px;
+    height: 250px;
+  }
+
+  .eyereach-splash-ring.ring-inner {
+    width: 180px;
+    height: 180px;
+  }
+}

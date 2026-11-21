@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "SmartFrame AI"
+    PROJECT_NAME: str = "EyeReach – Home Testing App"
     VERSION: str = "0.1.0"
     
     # Image Quality Thresholds

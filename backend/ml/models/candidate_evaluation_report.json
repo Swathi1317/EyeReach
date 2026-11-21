@@ -1,0 +1,206 @@
+{
+  "timestamp": "2026-10-28T20:27:36.924230",
+  "selected_model": "XGBoost",
+  "best_hyperparameters": {
+    "clf__learning_rate": 0.03,
+    "clf__max_depth": 5,
+    "clf__n_estimators": 200,
+    "clf__subsample": 0.8
+  },
+  "dataset_splits": {
+    "train": 3544,
+    "val": 757,
+    "test_kaggle": 750,
+    "test_real_world_holdout": 11
+  },
+  "model_comparison_validation": {
+    "RandomForest": {
+      "best_params": {
+        "clf__class_weight": null,
+        "clf__max_depth": null,
+        "clf__min_samples_split": 5,
+        "clf__n_estimators": 300
+      },
+      "val_metrics": {
+        "accuracy": 0.5918097754293263,
+        "macro_f1": 0.5919457647036755,
+        "macro_precision": 0.5916015851399172,
+        "macro_recall": 0.5927914438502674
+      }
+    },
+    "XGBoost": {
+      "best_params": {
+        "clf__learning_rate": 0.03,
+        "clf__max_depth": 5,
+        "clf__n_estimators": 200,
+        "clf__subsample": 0.8
+      },
+      "val_metrics": {
+        "accuracy": 0.5997357992073976,
+        "macro_f1": 0.598001261542333,
+        "macro_precision": 0.5976223137304859,
+        "macro_recall": 0.6008515406162466
+      }
+    }
+  },
+  "kaggle_test_evaluation": {
+    "accuracy": 0.5813333333333334,
+    "macro_precision": 0.5825929539636053,
+    "macro_recall": 0.5813333333333334,
+    "macro_f1": 0.5813025566834709,
+    "weighted_f1": 0.5813025566834709,
+    "per_class": {
+      "Heart": {
+        "precision": 0.5207100591715976,
+        "recall": 0.5866666666666667,
+        "f1_score": 0.5517241379310345,
+        "support": 150
+      },
+      "Oblong": {
+        "precision": 0.7350993377483444,
+        "recall": 0.74,
+        "f1_score": 0.7375415282392026,
+        "support": 150
+      },
+      "Oval": {
+        "precision": 0.4421768707482993,
+        "recall": 0.43333333333333335,
+        "f1_score": 0.4377104377104377,
+        "support": 150
+      },
+      "Round": {
+        "precision": 0.5985401459854015,
+        "recall": 0.5466666666666666,
+        "f1_score": 0.5714285714285714,
+        "support": 150
+      },
+      "Square": {
+        "precision": 0.6164383561643836,
+        "recall": 0.6,
+        "f1_score": 0.6081081081081081,
+        "support": 150
+      }
+    },
+    "confusion_matrix": [
+      [
+        88,
+        11,
+        31,
+        9,
+        11
+      ],
+      [
+        16,
+        111,
+        11,
+        3,
+        9
+      ],
+      [
+        45,
+        16,
+        65,
+        16,
+        8
+      ],
+      [
+        12,
+        6,
+        22,
+        82,
+        28
+      ],
+      [
+        8,
+        7,
+        18,
+        27,
+        90
+      ]
+    ],
+    "classes": [
+      "Heart",
+      "Oblong",
+      "Oval",
+      "Round",
+      "Square"
+    ]
+  },
+  "real_world_holdout_evaluation": {
+    "sample_count": 11,
+    "available_classes": [
+      "Oval",
+      "Round"
+    ],
+    "accuracy": 0.45454545454545453,
+    "predictions": [
+      {
+        "image_filename": "IMG-20260903-WA0028.jpg.jpeg",
+        "actual_label": "Round",
+        "predicted_label": "Round",
+        "match": true
+      },
+      {
+        "image_filename": "IMG-20261026-WA0027.jpg.jpeg",
+        "actual_label": "Oval",
+        "predicted_label": "Oblong",
+        "match": false
+      },
+      {
+        "image_filename": "IMG-20261026-WA0029.jpg.jpeg",
+        "actual_label": "Oval",
+        "predicted_label": "Oblong",
+        "match": false
+      },
+      {
+        "image_filename": "IMG-20261026-WA0048.jpg.jpeg",
+        "actual_label": "Round",
+        "predicted_label": "Square",
+        "match": false
+      },
+      {
+        "image_filename": "IMG-20261026-WA0049.jpg.jpeg",
+        "actual_label": "Round",
+        "predicted_label": "Square",
+        "match": false
+      },
+      {
+        "image_filename": "IMG-20261027-WA0001.jpg.jpeg",
+        "actual_label": "Oval",
+        "predicted_label": "Oblong",
+        "match": false
+      },
+      {
+        "image_filename": "IMG-20261027-WA0003.jpg.jpeg",
+        "actual_label": "Oval",
+        "predicted_label": "Oval",
+        "match": true
+      },
+      {
+        "image_filename": "IMG-20261027-WA0057.jpg.jpeg",
+        "actual_label": "Oval",
+        "predicted_label": "Oval",
+        "match": true
+      },
+      {
+        "image_filename": "WhatsApp Image 2026-10-27 at 8.47.35 PM.jpeg",
+        "actual_label": "Oval",
+        "predicted_label": "Oval",
+        "match": true
+      },
+      {
+        "image_filename": "WhatsApp Image 2026-10-27 at 8.47.37 PM.jpeg",
+        "actual_label": "Round",
+        "predicted_label": "Square",
+        "match": false
+      },
+      {
+        "image_filename": "WhatsApp Image 2026-10-27 at 8.54.00 PM.jpeg",
+        "actual_label": "Round",
+        "predicted_label": "Round",
+        "match": true
+      }
+    ],
+    "limitation_notice": "The real-world holdout set currently only evaluates Oval and Round face shapes. Real-world generalization for Heart, Oblong, and Square cannot be determined until verified real-world samples for those classes are collected."
+  }
+}
