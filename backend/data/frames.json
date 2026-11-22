@@ -34,7 +34,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_001.svg"
+    "image": "/frames/kaggle/0_mt6960_0.png",
+    "side_image": "/frames/kaggle/0_mt6960_0.png",
+    "angled_image": "/frames/kaggle/0_mt6960_0.png"
   },
   {
     "id": "frame_002",
@@ -75,7 +77,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_002.svg"
+    "image": "/frames/kaggle/1000_lupl00864_0.png",
+    "side_image": "/frames/kaggle/1000_lupl00864_0.png",
+    "angled_image": "/frames/kaggle/1000_lupl00864_0.png"
   },
   {
     "id": "frame_003",
@@ -112,7 +116,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_003.svg"
+    "image": "/frames/kaggle/1001_lumt00834_0.png",
+    "side_image": "/frames/kaggle/1001_lumt00834_0.png",
+    "angled_image": "/frames/kaggle/1001_lumt00834_0.png"
   },
   {
     "id": "frame_004",
@@ -151,7 +157,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_004.svg"
+    "image": "/frames/kaggle/1002_hmt0239_0.png",
+    "side_image": "/frames/kaggle/1002_hmt0239_0.png",
+    "angled_image": "/frames/kaggle/1002_hmt0239_0.png"
   },
   {
     "id": "frame_005",
@@ -188,7 +196,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_005.svg"
+    "image": "/frames/kaggle/1003_wd0016_0.png",
+    "side_image": "/frames/kaggle/1003_wd0016_0.png",
+    "angled_image": "/frames/kaggle/1003_wd0016_0.png"
   },
   {
     "id": "frame_006",
@@ -227,7 +237,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_006.svg"
+    "image": "/frames/kaggle/1004_sp0100_0.png",
+    "side_image": "/frames/kaggle/1004_sp0100_0.png",
+    "angled_image": "/frames/kaggle/1004_sp0100_0.png"
   },
   {
     "id": "frame_007",
@@ -266,7 +278,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_007.svg"
+    "image": "/frames/kaggle/1005_pm1176_0.png",
+    "side_image": "/frames/kaggle/1005_pm1176_0.png",
+    "angled_image": "/frames/kaggle/1005_pm1176_0.png"
   },
   {
     "id": "frame_008",
@@ -307,7 +321,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_008.svg"
+    "image": "/frames/kaggle/1006_pm1044_0.png",
+    "side_image": "/frames/kaggle/1006_pm1044_0.png",
+    "angled_image": "/frames/kaggle/1006_pm1044_0.png"
   },
   {
     "id": "frame_009",
@@ -348,7 +364,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_009.svg"
+    "image": "/frames/kaggle/1007_pl8924_0.png",
+    "side_image": "/frames/kaggle/1007_pl8924_0.png",
+    "angled_image": "/frames/kaggle/1007_pl8924_0.png"
   },
   {
     "id": "frame_010",
@@ -390,7 +408,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_010.svg"
+    "image": "/frames/kaggle/1008_pl8733_0.png",
+    "side_image": "/frames/kaggle/1008_pl8733_0.png",
+    "angled_image": "/frames/kaggle/1008_pl8733_0.png"
   },
   {
     "id": "frame_011",
@@ -427,7 +447,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_011.svg"
+    "image": "/frames/kaggle/1009_pl8586_0.png",
+    "side_image": "/frames/kaggle/1009_pl8586_0.png",
+    "angled_image": "/frames/kaggle/1009_pl8586_0.png"
   },
   {
     "id": "frame_012",
@@ -468,7 +490,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_012.svg"
+    "image": "/frames/kaggle/100_pl6335_0.png",
+    "side_image": "/frames/kaggle/100_pl6335_0.png",
+    "angled_image": "/frames/kaggle/100_pl6335_0.png"
   },
   {
     "id": "frame_013",
@@ -505,7 +529,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_013.svg"
+    "image": "/frames/kaggle/1010_pl8380_0.png",
+    "side_image": "/frames/kaggle/1010_pl8380_0.png",
+    "angled_image": "/frames/kaggle/1010_pl8380_0.png"
   },
   {
     "id": "frame_014",
@@ -543,7 +569,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_014.svg"
+    "image": "/frames/kaggle/1011_pl8054_0.png",
+    "side_image": "/frames/kaggle/1011_pl8054_0.png",
+    "angled_image": "/frames/kaggle/1011_pl8054_0.png"
   },
   {
     "id": "frame_015",
@@ -582,7 +610,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_015.svg"
+    "image": "/frames/kaggle/1012_pl6426_0.png",
+    "side_image": "/frames/kaggle/1012_pl6426_0.png",
+    "angled_image": "/frames/kaggle/1012_pl6426_0.png"
   },
   {
     "id": "frame_016",
@@ -619,7 +649,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_016.svg"
+    "image": "/frames/kaggle/1013_pl5677_0.png",
+    "side_image": "/frames/kaggle/1013_pl5677_0.png",
+    "angled_image": "/frames/kaggle/1013_pl5677_0.png"
   },
   {
     "id": "frame_017",
@@ -658,7 +690,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_017.svg"
+    "image": "/frames/kaggle/1014_mt7480_0.png",
+    "side_image": "/frames/kaggle/1014_mt7480_0.png",
+    "angled_image": "/frames/kaggle/1014_mt7480_0.png"
   },
   {
     "id": "frame_018",
@@ -695,7 +729,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_018.svg"
+    "image": "/frames/kaggle/1015_lupl00814_0.png",
+    "side_image": "/frames/kaggle/1015_lupl00814_0.png",
+    "angled_image": "/frames/kaggle/1015_lupl00814_0.png"
   },
   {
     "id": "frame_019",
@@ -732,7 +768,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_019.svg"
+    "image": "/frames/kaggle/1016_lupl00316_0.png",
+    "side_image": "/frames/kaggle/1016_lupl00316_0.png",
+    "angled_image": "/frames/kaggle/1016_lupl00316_0.png"
   },
   {
     "id": "frame_020",
@@ -773,7 +811,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_020.svg"
+    "image": "/frames/kaggle/1017_lupl00212_0.png",
+    "side_image": "/frames/kaggle/1017_lupl00212_0.png",
+    "angled_image": "/frames/kaggle/1017_lupl00212_0.png"
   },
   {
     "id": "frame_021",
@@ -815,7 +855,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_021.svg"
+    "image": "/frames/kaggle/1018_lumt00339_0.png",
+    "side_image": "/frames/kaggle/1018_lumt00339_0.png",
+    "angled_image": "/frames/kaggle/1018_lumt00339_0.png"
   },
   {
     "id": "frame_022",
@@ -856,7 +898,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_022.svg"
+    "image": "/frames/kaggle/1019_lumt00235_0.png",
+    "side_image": "/frames/kaggle/1019_lumt00235_0.png",
+    "angled_image": "/frames/kaggle/1019_lumt00235_0.png"
   },
   {
     "id": "frame_023",
@@ -894,7 +938,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_023.svg"
+    "image": "/frames/kaggle/101_pm0387_0.png",
+    "side_image": "/frames/kaggle/101_pm0387_0.png",
+    "angled_image": "/frames/kaggle/101_pm0387_0.png"
   },
   {
     "id": "frame_024",
@@ -934,7 +980,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_024.svg"
+    "image": "/frames/kaggle/1020_tt0912_0.png",
+    "side_image": "/frames/kaggle/1020_tt0912_0.png",
+    "angled_image": "/frames/kaggle/1020_tt0912_0.png"
   },
   {
     "id": "frame_025",
@@ -973,7 +1021,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_025.svg"
+    "image": "/frames/kaggle/1021_tt0891_0.png",
+    "side_image": "/frames/kaggle/1021_tt0891_0.png",
+    "angled_image": "/frames/kaggle/1021_tt0891_0.png"
   },
   {
     "id": "frame_026",
@@ -1012,7 +1062,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_026.svg"
+    "image": "/frames/kaggle/1022_pm0862_0.png",
+    "side_image": "/frames/kaggle/1022_pm0862_0.png",
+    "angled_image": "/frames/kaggle/1022_pm0862_0.png"
   },
   {
     "id": "frame_027",
@@ -1051,7 +1103,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_027.svg"
+    "image": "/frames/kaggle/1023_pm0321_0.png",
+    "side_image": "/frames/kaggle/1023_pm0321_0.png",
+    "angled_image": "/frames/kaggle/1023_pm0321_0.png"
   },
   {
     "id": "frame_028",
@@ -1091,7 +1145,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_028.svg"
+    "image": "/frames/kaggle/1024_pl8955_0.png",
+    "side_image": "/frames/kaggle/1024_pl8955_0.png",
+    "angled_image": "/frames/kaggle/1024_pl8955_0.png"
   },
   {
     "id": "frame_029",
@@ -1128,7 +1184,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_029.svg"
+    "image": "/frames/kaggle/1025_pl8815_0.png",
+    "side_image": "/frames/kaggle/1025_pl8815_0.png",
+    "angled_image": "/frames/kaggle/1025_pl8815_0.png"
   },
   {
     "id": "frame_030",
@@ -1169,7 +1227,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_030.svg"
+    "image": "/frames/kaggle/1026_pl8383_0.png",
+    "side_image": "/frames/kaggle/1026_pl8383_0.png",
+    "angled_image": "/frames/kaggle/1026_pl8383_0.png"
   },
   {
     "id": "frame_031",
@@ -1208,7 +1268,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_031.svg"
+    "image": "/frames/kaggle/1027_pl7813_0.png",
+    "side_image": "/frames/kaggle/1027_pl7813_0.png",
+    "angled_image": "/frames/kaggle/1027_pl7813_0.png"
   },
   {
     "id": "frame_032",
@@ -1246,7 +1308,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_032.svg"
+    "image": "/frames/kaggle/1028_mt7603_0.png",
+    "side_image": "/frames/kaggle/1028_mt7603_0.png",
+    "angled_image": "/frames/kaggle/1028_mt7603_0.png"
   },
   {
     "id": "frame_033",
@@ -1285,7 +1349,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_033.svg"
+    "image": "/frames/kaggle/1029_mt7580_0.png",
+    "side_image": "/frames/kaggle/1029_mt7580_0.png",
+    "angled_image": "/frames/kaggle/1029_mt7580_0.png"
   },
   {
     "id": "frame_034",
@@ -1325,7 +1391,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_034.svg"
+    "image": "/frames/kaggle/102_mt2951_0.png",
+    "side_image": "/frames/kaggle/102_mt2951_0.png",
+    "angled_image": "/frames/kaggle/102_mt2951_0.png"
   },
   {
     "id": "frame_035",
@@ -1364,7 +1432,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_035.svg"
+    "image": "/frames/kaggle/1030_mt7315_0.png",
+    "side_image": "/frames/kaggle/1030_mt7315_0.png",
+    "angled_image": "/frames/kaggle/1030_mt7315_0.png"
   },
   {
     "id": "frame_036",
@@ -1404,7 +1474,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_036.svg"
+    "image": "/frames/kaggle/1031_hmt0193_0.png",
+    "side_image": "/frames/kaggle/1031_hmt0193_0.png",
+    "angled_image": "/frames/kaggle/1031_hmt0193_0.png"
   },
   {
     "id": "frame_037",
@@ -1445,7 +1517,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_037.svg"
+    "image": "/frames/kaggle/1032_cp0019_0.png",
+    "side_image": "/frames/kaggle/1032_cp0019_0.png",
+    "angled_image": "/frames/kaggle/1032_cp0019_0.png"
   },
   {
     "id": "frame_038",
@@ -1483,7 +1557,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_038.svg"
+    "image": "/frames/kaggle/1033_pm1180_0.png",
+    "side_image": "/frames/kaggle/1033_pm1180_0.png",
+    "angled_image": "/frames/kaggle/1033_pm1180_0.png"
   },
   {
     "id": "frame_039",
@@ -1521,7 +1597,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_039.svg"
+    "image": "/frames/kaggle/1034_pm1067_0.png",
+    "side_image": "/frames/kaggle/1034_pm1067_0.png",
+    "angled_image": "/frames/kaggle/1034_pm1067_0.png"
   },
   {
     "id": "frame_040",
@@ -1562,7 +1640,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_040.svg"
+    "image": "/frames/kaggle/1035_pl8817_0.png",
+    "side_image": "/frames/kaggle/1035_pl8817_0.png",
+    "angled_image": "/frames/kaggle/1035_pl8817_0.png"
   },
   {
     "id": "frame_041",
@@ -1599,7 +1679,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_041.svg"
+    "image": "/frames/kaggle/1036_pl8511_0.png",
+    "side_image": "/frames/kaggle/1036_pl8511_0.png",
+    "angled_image": "/frames/kaggle/1036_pl8511_0.png"
   },
   {
     "id": "frame_042",
@@ -1640,7 +1722,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_042.svg"
+    "image": "/frames/kaggle/1037_pl8430_0.png",
+    "side_image": "/frames/kaggle/1037_pl8430_0.png",
+    "angled_image": "/frames/kaggle/1037_pl8430_0.png"
   },
   {
     "id": "frame_043",
@@ -1682,7 +1766,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_043.svg"
+    "image": "/frames/kaggle/1038_pl8360_0.png",
+    "side_image": "/frames/kaggle/1038_pl8360_0.png",
+    "angled_image": "/frames/kaggle/1038_pl8360_0.png"
   },
   {
     "id": "frame_044",
@@ -1724,7 +1810,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_044.svg"
+    "image": "/frames/kaggle/1039_mt7651_0.png",
+    "side_image": "/frames/kaggle/1039_mt7651_0.png",
+    "angled_image": "/frames/kaggle/1039_mt7651_0.png"
   },
   {
     "id": "frame_045",
@@ -1763,7 +1851,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_045.svg"
+    "image": "/frames/kaggle/103_hmt0127_0.png",
+    "side_image": "/frames/kaggle/103_hmt0127_0.png",
+    "angled_image": "/frames/kaggle/103_hmt0127_0.png"
   },
   {
     "id": "frame_046",
@@ -1804,7 +1894,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_046.svg"
+    "image": "/frames/kaggle/1040_mt7455_0.png",
+    "side_image": "/frames/kaggle/1040_mt7455_0.png",
+    "angled_image": "/frames/kaggle/1040_mt7455_0.png"
   },
   {
     "id": "frame_047",
@@ -1845,7 +1937,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_047.svg"
+    "image": "/frames/kaggle/1041_mt7310_0.png",
+    "side_image": "/frames/kaggle/1041_mt7310_0.png",
+    "angled_image": "/frames/kaggle/1041_mt7310_0.png"
   },
   {
     "id": "frame_048",
@@ -1886,7 +1980,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_048.svg"
+    "image": "/frames/kaggle/1042_mt7040_0.png",
+    "side_image": "/frames/kaggle/1042_mt7040_0.png",
+    "angled_image": "/frames/kaggle/1042_mt7040_0.png"
   },
   {
     "id": "frame_049",
@@ -1926,7 +2022,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_049.svg"
+    "image": "/frames/kaggle/1043_lupl01009_0.png",
+    "side_image": "/frames/kaggle/1043_lupl01009_0.png",
+    "angled_image": "/frames/kaggle/1043_lupl01009_0.png"
   },
   {
     "id": "frame_050",
@@ -1965,7 +2063,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_050.svg"
+    "image": "/frames/kaggle/1044_lupl00706_0.png",
+    "side_image": "/frames/kaggle/1044_lupl00706_0.png",
+    "angled_image": "/frames/kaggle/1044_lupl00706_0.png"
   },
   {
     "id": "frame_051",
@@ -2002,7 +2102,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_051.svg"
+    "image": "/frames/kaggle/1045_hmt0129_0.png",
+    "side_image": "/frames/kaggle/1045_hmt0129_0.png",
+    "angled_image": "/frames/kaggle/1045_hmt0129_0.png"
   },
   {
     "id": "frame_052",
@@ -2041,7 +2143,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_052.svg"
+    "image": "/frames/kaggle/1046_cp0027_0.png",
+    "side_image": "/frames/kaggle/1046_cp0027_0.png",
+    "angled_image": "/frames/kaggle/1046_cp0027_0.png"
   },
   {
     "id": "frame_053",
@@ -2081,7 +2185,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_053.svg"
+    "image": "/frames/kaggle/1047_pm1487_0.png",
+    "side_image": "/frames/kaggle/1047_pm1487_0.png",
+    "angled_image": "/frames/kaggle/1047_pm1487_0.png"
   },
   {
     "id": "frame_054",
@@ -2120,7 +2226,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_054.svg"
+    "image": "/frames/kaggle/1048_pm1205_0.png",
+    "side_image": "/frames/kaggle/1048_pm1205_0.png",
+    "angled_image": "/frames/kaggle/1048_pm1205_0.png"
   },
   {
     "id": "frame_055",
@@ -2157,7 +2265,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_055.svg"
+    "image": "/frames/kaggle/1049_pl8954_0.png",
+    "side_image": "/frames/kaggle/1049_pl8954_0.png",
+    "angled_image": "/frames/kaggle/1049_pl8954_0.png"
   },
   {
     "id": "frame_056",
@@ -2196,7 +2306,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_056.svg"
+    "image": "/frames/kaggle/104_mt6613_0.png",
+    "side_image": "/frames/kaggle/104_mt6613_0.png",
+    "angled_image": "/frames/kaggle/104_mt6613_0.png"
   },
   {
     "id": "frame_057",
@@ -2237,7 +2349,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_057.svg"
+    "image": "/frames/kaggle/1050_pl8942_0.png",
+    "side_image": "/frames/kaggle/1050_pl8942_0.png",
+    "angled_image": "/frames/kaggle/1050_pl8942_0.png"
   },
   {
     "id": "frame_058",
@@ -2278,7 +2392,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_058.svg"
+    "image": "/frames/kaggle/1051_pl8836_0.png",
+    "side_image": "/frames/kaggle/1051_pl8836_0.png",
+    "angled_image": "/frames/kaggle/1051_pl8836_0.png"
   },
   {
     "id": "frame_059",
@@ -2319,7 +2435,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_059.svg"
+    "image": "/frames/kaggle/1052_pl8732_0.png",
+    "side_image": "/frames/kaggle/1052_pl8732_0.png",
+    "angled_image": "/frames/kaggle/1052_pl8732_0.png"
   },
   {
     "id": "frame_060",
@@ -2360,7 +2478,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_060.svg"
+    "image": "/frames/kaggle/1053_pl8679_0.png",
+    "side_image": "/frames/kaggle/1053_pl8679_0.png",
+    "angled_image": "/frames/kaggle/1053_pl8679_0.png"
   },
   {
     "id": "frame_061",
@@ -2397,7 +2517,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_061.svg"
+    "image": "/frames/kaggle/1054_pl8487_0.png",
+    "side_image": "/frames/kaggle/1054_pl8487_0.png",
+    "angled_image": "/frames/kaggle/1054_pl8487_0.png"
   },
   {
     "id": "frame_062",
@@ -2436,7 +2558,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_062.svg"
+    "image": "/frames/kaggle/1055_pl8437_0.png",
+    "side_image": "/frames/kaggle/1055_pl8437_0.png",
+    "angled_image": "/frames/kaggle/1055_pl8437_0.png"
   },
   {
     "id": "frame_063",
@@ -2473,7 +2597,9 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_063.svg"
+    "image": "/frames/kaggle/1056_pl7551_0.png",
+    "side_image": "/frames/kaggle/1056_pl7551_0.png",
+    "angled_image": "/frames/kaggle/1056_pl7551_0.png"
   },
   {
     "id": "frame_064",
@@ -2514,6 +2640,8 @@
       "store_001",
       "store_002"
     ],
-    "image": "/frames/frame_064.svg"
+    "image": "/frames/kaggle/1057_mt7082_0.png",
+    "side_image": "/frames/kaggle/1057_mt7082_0.png",
+    "angled_image": "/frames/kaggle/1057_mt7082_0.png"
   }
 ]

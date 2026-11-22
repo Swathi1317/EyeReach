@@ -18,6 +18,7 @@ class Shop(Base):
 
     products = relationship("Product", back_populates="shop", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="shop", cascade="all, delete-orphan")
+    doctors = relationship("Doctor", back_populates="shop", cascade="all, delete-orphan")
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -70,6 +71,8 @@ class Product(Base):
     angled_image = Column(String(500), nullable=True)
     
     is_active = Column(Boolean, default=True)
+    view_count = Column(Integer, default=0)
+    selection_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     shop = relationship("Shop", back_populates="products")
@@ -117,7 +120,9 @@ class Appointment(Base):
     home_address = Column(Text, nullable=True) # for home testing
     purpose = Column(String(200), nullable=False) # Purpose of Meeting or Type of Test
     additional_message = Column(Text, nullable=True)
-    status = Column(String(50), default="Confirmed") # Confirmed, Completed, Cancelled
+    status = Column(String(50), default="Pending") # Pending, Confirmed, Rejected, Completed, Cancelled
+    doctor_id = Column(Integer, ForeignKey("doctors.id"), nullable=True, index=True)
+    doctor_notes = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     # Face Analysis & Biometrics transferred from facial scan
@@ -133,6 +138,34 @@ class Appointment(Base):
     face_sketch_image = Column(Text, nullable=True) # Data URL or static image URL of face sketch/scan
     face_analysis_summary = Column(Text, nullable=True) # Summary notes for the doctor
     selected_frames_json = Column(Text, nullable=True) # JSON list of selected frames for home visit trial
+
+    doctor = relationship("Doctor", back_populates="appointments")
+
+class Doctor(Base):
+    __tablename__ = "doctors"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(150), nullable=False)
+    email = Column(String(150), unique=True, index=True, nullable=False)
+    mobile = Column(String(25), nullable=False)
+    specialization = Column(String(100), default="Optometrist")
+    qualification = Column(String(100), default="B.Optom / M.Optom")
+    registration_number = Column(String(50), nullable=True)
+    password_hash = Column(String(255), nullable=False)
+    shop_id = Column(Integer, ForeignKey("shops.id"), nullable=True, index=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    shop = relationship("Shop", back_populates="doctors")
+    appointments = relationship("Appointment", back_populates="doctor")
+
+class FrameView(Base):
+    __tablename__ = "frame_views"
+
+    id = Column(Integer, primary_key=True, index=True)
+    product_id = Column(String(100), nullable=False, index=True)
+    customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
+    viewed_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class CustomerFramePick(Base):
     __tablename__ = "customer_frame_picks"

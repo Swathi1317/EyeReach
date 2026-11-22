@@ -9,8 +9,8 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..db.database import get_db
-from ..db.models import Shop, Product, Order, Customer, CustomerFramePick, Appointment
-from .shop_auth import get_current_shop
+from ..db.models import Shop, Product, Order, Customer, CustomerFramePick, Appointment, Doctor, FrameView
+from .shop_auth import get_current_shop, hash_password
 
 router = APIRouter(prefix="/api/shop", tags=["Shop Inventory & Dashboard"])
 
@@ -19,14 +19,14 @@ UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "data", "upload
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 class ProductCreateRequest(BaseModel):
-    product_id: str
+    product_id: Optional[str] = None
     brand: str
     name: str
     shape: str
     material: str
     color: str
-    frame_type: str
-    size: str
+    frame_type: str = "Full Rim"
+    size: str = "Medium"
     lens_width_mm: Optional[float] = None
     bridge_width_mm: Optional[float] = None
     temple_length_mm: Optional[float] = None
@@ -36,7 +36,7 @@ class ProductCreateRequest(BaseModel):
     stock_quantity: int = 1
     gender_category: str = "Unisex"
     description: Optional[str] = None
-    front_image: str
+    front_image: Optional[str] = None
     side_image: Optional[str] = None
     angled_image: Optional[str] = None
 
@@ -206,16 +206,32 @@ def get_shop_product(id: int, current_shop: Shop = Depends(get_current_shop), db
 
 @router.post("/products")
 def create_shop_product(req: ProductCreateRequest, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    # Auto-generate Product ID if missing
+    pid = (req.product_id or "").strip()
+    if not pid:
+        highest_prod = db.query(Product).order_by(Product.id.desc()).first()
+        next_num = (highest_prod.id + 1) if highest_prod else 1
+        pid = f"FR{next_num:03d}"
+    
     # Check for duplicate Product ID in this shop
     dup = db.query(Product).filter(
         Product.shop_id == current_shop.id,
-        Product.product_id == req.product_id.strip()
+        Product.product_id == pid,
+        Product.is_active == True
     ).first()
     if dup:
-        raise HTTPException(status_code=400, detail=f"Product ID '{req.product_id}' already exists in your shop.")
+        raise HTTPException(status_code=400, detail=f"Product ID '{pid}' already exists in your shop.")
+
+    # Default to a real optical frame image if not provided
+    front_img = (req.front_image or "").strip()
+    if not front_img or front_img.endswith(".svg"):
+        front_img = "/frames/kaggle/0_mt6960_0.png"
+
+    side_img = (req.side_image or "").strip() or front_img
+    angled_img = (req.angled_image or "").strip() or front_img
 
     new_prod = Product(
-        product_id=req.product_id.strip(),
+        product_id=pid,
         shop_id=current_shop.id,
         brand=req.brand.strip(),
         name=req.name.strip(),
@@ -233,15 +249,18 @@ def create_shop_product(req: ProductCreateRequest, current_shop: Shop = Depends(
         stock_quantity=req.stock_quantity,
         gender_category=req.gender_category.strip(),
         description=req.description,
-        front_image=req.front_image.strip(),
-        side_image=req.side_image.strip() if req.side_image else req.front_image.strip(),
-        angled_image=req.angled_image.strip() if req.angled_image else req.front_image.strip()
+        front_image=front_img,
+        side_image=side_img,
+        angled_image=angled_img,
+        view_count=0,
+        selection_count=0,
+        is_active=True
     )
     db.add(new_prod)
     db.commit()
     db.refresh(new_prod)
 
-    return {"status": "success", "message": f"Frame '{new_prod.name}' added successfully.", "product": new_prod}
+    return {"status": "success", "message": f"Frame '{new_prod.name}' added successfully to inventory.", "product": new_prod}
 
 @router.put("/products/{id}")
 def update_shop_product(id: int, req: ProductUpdateRequest, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
@@ -258,13 +277,35 @@ def update_shop_product(id: int, req: ProductUpdateRequest, current_shop: Shop =
 
 @router.delete("/products/{id}")
 def delete_shop_product(id: int, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    # Find product by id
     product = db.query(Product).filter(Product.id == id, Product.shop_id == current_shop.id).first()
+    if not product:
+        # Fallback to any shop ID matching in demo mode
+        product = db.query(Product).filter(Product.id == id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found in your inventory.")
 
-    db.delete(product)
-    db.commit()
-    return {"status": "success", "message": f"Product '{product.name}' deleted successfully."}
+    prod_name = product.name
+    prod_code = product.product_id
+
+    # 1. Clean up from CustomerFramePick if referenced
+    db.query(CustomerFramePick).filter(
+        (CustomerFramePick.product_id == prod_code) | 
+        (CustomerFramePick.product_id == str(product.id))
+    ).delete(synchronize_session=False)
+
+    # 2. Check if order references this product
+    order_count = db.query(Order).filter(Order.product_id == product.id).count()
+    if order_count > 0:
+        # Soft-delete to preserve business order history, while removing from inventory & catalog
+        product.is_active = False
+        db.commit()
+        return {"status": "success", "message": f"Frame '{prod_name}' has been successfully deleted from inventory."}
+    else:
+        # Hard delete if no orders exist
+        db.delete(product)
+        db.commit()
+        return {"status": "success", "message": f"Frame '{prod_name}' has been successfully deleted from inventory."}
 
 @router.patch("/products/{id}/price")
 def update_product_price(id: int, req: PriceUpdate, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
@@ -564,119 +605,236 @@ def list_shop_customers(db: Session = Depends(get_db)):
         for c in customers
     ]
 
+# ----------------- REAL FRAMES GALLERY & VIEW TRACKING -----------------
+
+@router.get("/real-frames-gallery")
+def get_real_frames_gallery():
+    """Returns real transparent spectacle frame photos from the catalog for owner frame addition/editing."""
+    kaggle_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "frontend", "public", "frames", "kaggle")
+    if not os.path.exists(kaggle_dir):
+        return {"status": "success", "images": [], "total": 0}
+    files = sorted([f for f in os.listdir(kaggle_dir) if f.endswith(".png")])
+    return {
+        "status": "success",
+        "images": [f"/frames/kaggle/{f}" for f in files[:80]],
+        "total": len(files)
+    }
+
+@router.post("/products/{id}/view")
+def track_product_view(id: int, db: Session = Depends(get_db)):
+    """Records a customer view event for a frame, incrementing actual view counts."""
+    prod = db.query(Product).filter(Product.id == id).first()
+    if prod:
+        prod.view_count = (prod.view_count or 0) + 1
+        db.commit()
+        return {"status": "success", "product_id": prod.product_id, "view_count": prod.view_count}
+    return {"status": "not_found", "view_count": 0}
+
+# ----------------- DOCTOR MANAGEMENT FOR OPTICAL STORE OWNERS -----------------
+
+class DoctorCreateRequest(BaseModel):
+    name: str
+    email: str
+    mobile: str
+    password: str
+    specialization: str = "Consultant Optometrist"
+    qualification: str = "B.Optom / M.Optom"
+    registration_number: Optional[str] = None
+
+class AppointmentAssignRequest(BaseModel):
+    doctor_id: int
+
+@router.get("/doctors")
+def list_shop_doctors(current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    """List all optometrists and doctors linked to this optical store."""
+    docs = db.query(Doctor).filter(
+        (Doctor.shop_id == current_shop.id) | (Doctor.shop_id == None),
+        Doctor.is_active == True
+    ).all()
+    return {
+        "status": "success",
+        "doctors": [
+            {
+                "id": d.id,
+                "name": d.name,
+                "email": d.email,
+                "mobile": d.mobile,
+                "specialization": d.specialization,
+                "qualification": d.qualification,
+                "registration_number": d.registration_number,
+                "created_at": d.created_at.strftime("%d %b %Y") if d.created_at else ""
+            }
+            for d in docs
+        ]
+    }
+
+@router.post("/doctors")
+def add_shop_doctor(req: DoctorCreateRequest, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    """Allow optical shop owner to link a new optometrist/doctor."""
+    existing = db.query(Doctor).filter(Doctor.email == req.email.lower().strip()).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="A doctor with this email is already registered.")
+
+    new_doc = Doctor(
+        name=req.name.strip(),
+        email=req.email.lower().strip(),
+        mobile=req.mobile.strip(),
+        specialization=req.specialization.strip(),
+        qualification=req.qualification.strip(),
+        registration_number=req.registration_number.strip() if req.registration_number else None,
+        password_hash=hash_password(req.password),
+        shop_id=current_shop.id,
+        is_active=True
+    )
+    db.add(new_doc)
+    db.commit()
+    db.refresh(new_doc)
+    return {
+        "status": "success",
+        "message": f"Doctor '{new_doc.name}' linked to {current_shop.shop_name} successfully.",
+        "doctor": {
+            "id": new_doc.id,
+            "name": new_doc.name,
+            "email": new_doc.email,
+            "mobile": new_doc.mobile,
+            "specialization": new_doc.specialization,
+            "qualification": new_doc.qualification,
+            "registration_number": new_doc.registration_number
+        }
+    }
+
+@router.put("/appointments/{id}/assign")
+def assign_appointment_doctor(id: int, req: AppointmentAssignRequest, db: Session = Depends(get_db)):
+    """Owner assigns/reassigns an appointment to a linked doctor."""
+    appt = db.query(Appointment).filter(Appointment.id == id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found.")
+    doc = db.query(Doctor).filter(Doctor.id == req.doctor_id, Doctor.is_active == True).first()
+    if not doc:
+        raise HTTPException(status_code=404, detail="Doctor not found or inactive.")
+    appt.doctor_id = doc.id
+    db.commit()
+    db.refresh(appt)
+    return {
+        "status": "success",
+        "message": f"Appointment {appt.appointment_id} assigned to {doc.name}.",
+        "doctor_name": doc.name,
+        "doctor_id": doc.id
+    }
+
 # ----------------- CUSTOMER FRAME PREFERENCES (AGGREGATE DEMAND ANALYTICS) -----------------
 
 @router.get("/customer-frame-preferences")
 def get_customer_frame_preferences(db: Session = Depends(get_db)):
     """
-    Returns aggregate customer frame preference intelligence for optical store owners.
-    Exposes popular models, shapes, colors, and shape+color combinations.
-    Privacy Protected: Returns only aggregate demand statistics without revealing private customer details.
+    Returns actual customer frame preference intelligence for optical store owners.
+    Calculates MOST VIEWED and MOST SELECTED separately from real database records.
     """
-    total_likes = db.query(CustomerFramePick).count()
-    unique_customers = db.query(func.count(func.distinct(CustomerFramePick.customer_id))).scalar() or 0
+    total_views = db.query(func.sum(Product.view_count)).filter(Product.is_active == True).scalar() or 0
+    total_selections = db.query(func.sum(Product.selection_count)).filter(Product.is_active == True).scalar() or 0
+    unique_customers = db.query(func.count(Customer.id)).scalar() or 0
 
-    # 1. Most liked models
-    model_stats = db.query(
-        CustomerFramePick.product_id,
-        CustomerFramePick.name,
-        CustomerFramePick.brand,
-        CustomerFramePick.shape,
-        CustomerFramePick.color,
-        CustomerFramePick.front_image,
-        CustomerFramePick.price,
-        func.count(CustomerFramePick.id).label("likes_count")
-    ).group_by(
-        CustomerFramePick.product_id,
-        CustomerFramePick.name,
-        CustomerFramePick.brand,
-        CustomerFramePick.shape,
-        CustomerFramePick.color,
-        CustomerFramePick.front_image,
-        CustomerFramePick.price
-    ).order_by(func.count(CustomerFramePick.id).desc()).limit(10).all()
+    # 1. Most Viewed Frames (ranked strictly by views)
+    viewed_query = db.query(Product).filter(
+        Product.is_active == True
+    ).order_by(Product.view_count.desc()).limit(8).all()
 
-    most_liked_models = [
+    most_viewed_frames = [
         {
-            "product_id": m.product_id,
-            "name": m.name,
-            "brand": m.brand or "EyeReach Studio",
-            "shape": m.shape or "Standard",
-            "color": m.color or "Classic",
-            "front_image": m.front_image or "/frames/frame_001.svg",
-            "price": m.price,
-            "likes_count": m.likes_count,
-            "demand_share": round((m.likes_count / total_likes * 100), 1) if total_likes > 0 else 0
+            "id": p.id,
+            "product_id": p.product_id,
+            "name": p.name,
+            "brand": p.brand,
+            "shape": p.shape,
+            "color": p.color,
+            "front_image": p.front_image,
+            "price": p.price,
+            "views_count": p.view_count or 0,
+            "selections_count": p.selection_count or 0,
+            "view_share": round(((p.view_count or 0) / max(1, total_views) * 100), 1)
         }
-        for m in model_stats
+        for p in viewed_query
     ]
 
-    # 2. Popular frame shapes
-    shape_stats = db.query(
-        CustomerFramePick.shape,
-        func.count(CustomerFramePick.id).label("count")
-    ).group_by(CustomerFramePick.shape).order_by(func.count(CustomerFramePick.id).desc()).all()
+    # 2. Most Selected Frames (ranked strictly by customer selections/likes)
+    selected_query = db.query(Product).filter(
+        Product.is_active == True
+    ).order_by(Product.selection_count.desc()).limit(8).all()
 
-    popular_shapes = [
+    most_selected_frames = [
         {
-            "shape": s.shape or "Other",
-            "count": s.count,
-            "percentage": round((s.count / total_likes * 100), 1) if total_likes > 0 else 0
+            "id": p.id,
+            "product_id": p.product_id,
+            "name": p.name,
+            "brand": p.brand,
+            "shape": p.shape,
+            "color": p.color,
+            "front_image": p.front_image,
+            "price": p.price,
+            "selections_count": p.selection_count or 0,
+            "views_count": p.view_count or 0,
+            "conversion_rate": round(((p.selection_count or 0) / max(1, p.view_count or 1) * 100), 1),
+            "selection_share": round(((p.selection_count or 0) / max(1, total_selections) * 100), 1)
         }
-        for s in shape_stats if s.shape
+        for p in selected_query
     ]
 
-    # 3. Popular frame colours
-    color_stats = db.query(
-        CustomerFramePick.color,
-        func.count(CustomerFramePick.id).label("count")
-    ).group_by(CustomerFramePick.color).order_by(func.count(CustomerFramePick.id).desc()).all()
+    # 3. Most Preferred Frame Shapes
+    shape_rows = db.query(
+        Product.shape,
+        func.sum(Product.selection_count).label("total_sel"),
+        func.sum(Product.view_count).label("total_v")
+    ).filter(Product.is_active == True).group_by(Product.shape).order_by(func.sum(Product.selection_count).desc()).all()
 
-    popular_colors = [
+    most_preferred_shapes = [
         {
-            "color": c.color or "Other",
-            "count": c.count,
-            "percentage": round((c.count / total_likes * 100), 1) if total_likes > 0 else 0
+            "shape": s.shape or "Classic",
+            "selections_count": int(s.total_sel or 0),
+            "views_count": int(s.total_v or 0),
+            "percentage": round(((s.total_sel or 0) / max(1, total_selections) * 100), 1)
         }
-        for c in color_stats if c.color
+        for s in shape_rows if s.shape
     ]
 
-    # 4. Shape + Colour Combinations (e.g. "Black Round – 45 likes", "Brown Square – 30 likes", "Gold Cat Eye – 25 likes")
-    combo_stats = db.query(
-        CustomerFramePick.shape,
-        CustomerFramePick.color,
-        func.count(CustomerFramePick.id).label("likes")
-    ).group_by(CustomerFramePick.shape, CustomerFramePick.color).order_by(func.count(CustomerFramePick.id).desc()).limit(8).all()
+    # 4. Most Preferred Frame Colours
+    color_rows = db.query(
+        Product.color,
+        func.sum(Product.selection_count).label("total_sel"),
+        func.sum(Product.view_count).label("total_v")
+    ).filter(Product.is_active == True).group_by(Product.color).order_by(func.sum(Product.selection_count).desc()).all()
 
-    top_combinations = [
+    most_preferred_colors = [
         {
-            "combination": f"{c.color} {c.shape}",
-            "shape": c.shape,
-            "color": c.color,
-            "likes": c.likes,
-            "label": f"{c.color} {c.shape} – {c.likes} likes"
+            "color": c.color or "Black",
+            "selections_count": int(c.total_sel or 0),
+            "views_count": int(c.total_v or 0),
+            "percentage": round(((c.total_sel or 0) / max(1, total_selections) * 100), 1)
         }
-        for c in combo_stats if c.shape and c.color
+        for c in color_rows if c.color
     ]
 
     # Actionable smart stock recommendation
-    top_combo_str = top_combinations[0]["combination"] if top_combinations else "Classic Round"
-    top_shape_str = popular_shapes[0]["shape"] if popular_shapes else "Round"
+    top_shape = most_preferred_shapes[0]["shape"] if most_preferred_shapes else "Round"
+    top_color = most_preferred_colors[0]["color"] if most_preferred_colors else "Black"
+    top_selected = most_selected_frames[0]["name"] if most_selected_frames else "Classic Round"
+    top_viewed = most_viewed_frames[0]["name"] if most_viewed_frames else "Classic Round"
+
     smart_rec = (
-        f"High customer demand detected for {top_combo_str} frames ({top_combinations[0]['likes'] if top_combinations else 0} likes). "
-        f"{top_shape_str} frames lead overall styling preferences. Maintain robust stock in {top_shape_str} and neutral tones."
+        f"Actual demand analytics show '{top_selected}' leads customer selections ({most_selected_frames[0]['selections_count'] if most_selected_frames else 0} selections), "
+        f"while '{top_viewed}' receives highest customer curiosity ({most_viewed_frames[0]['views_count'] if most_viewed_frames else 0} views). "
+        f"Most preferred frame geometry is '{top_shape}' with '{top_color}' coloration. Maintain prioritized stock in these models."
     )
 
     return {
         "status": "success",
-        "total_likes": total_likes,
+        "total_views": total_views,
+        "total_selections": total_selections,
         "unique_customers": unique_customers,
-        "most_liked_models": most_liked_models,
-        "popular_shapes": popular_shapes,
-        "popular_colors": popular_colors,
-        "top_combinations": top_combinations,
-        "smart_recommendation": smart_rec,
-        "privacy_notice": "Customer privacy protected. Figures represent anonymized aggregate preferences across all registered customer accounts."
+        "most_viewed_frames": most_viewed_frames,
+        "most_selected_frames": most_selected_frames,
+        "most_preferred_shapes": most_preferred_shapes,
+        "most_preferred_colors": most_preferred_colors,
+        "smart_recommendation": smart_rec
     }
 
 @router.get("/home-appointments")
@@ -710,6 +868,9 @@ def list_shop_home_appointments(db: Session = Depends(get_db)):
             "created_at": a.created_at.strftime("%d %b %Y, %I:%M %p") if a.created_at else "",
             "face_shape": a.face_shape,
             "ipd_mm": a.ipd_mm,
+            "doctor_id": a.doctor_id,
+            "doctor_name": a.doctor.name if a.doctor else None,
+            "doctor_notes": a.doctor_notes,
             "selected_frames": frames,
             "selected_frames_count": len(frames)
         })

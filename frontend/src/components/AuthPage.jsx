@@ -13,7 +13,8 @@ import {
   ArrowRight,
   Store,
   AlertCircle,
-  X
+  X,
+  Stethoscope
 } from 'lucide-react';
 import irisBg from '../assets/eyereach_iris_bg.jpg';
 import './AuthPage.css';
@@ -185,6 +186,12 @@ export default function AuthPage({ onLogin }) {
   });
   const [isShopRegister, setIsShopRegister] = useState(false);
 
+  // Doctor / Optometrist State
+  const [doctorForm, setDoctorForm] = useState({
+    email: '',
+    password: ''
+  });
+
   // UI States
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -331,6 +338,42 @@ export default function AuthPage({ onLogin }) {
     }
   };
 
+  // ----------------- DOCTOR / OPTOMETRIST AUTH -----------------
+  const handleDoctorLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setAuthError(null);
+    setAuthSuccess(null);
+
+    if (!doctorForm.email.trim()) {
+      setAuthError('Please enter doctor email address.');
+      setLoading(false);
+      return;
+    }
+    if (!doctorForm.password) {
+      setAuthError('Please enter password.');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await axios.post('/api/doctor/login', {
+        email: doctorForm.email.trim(),
+        password: doctorForm.password
+      });
+      localStorage.setItem('smartframe_token', res.data.token);
+      onLogin({
+        isGuest: false,
+        role: 'doctor',
+        ...res.data.doctor
+      }, true);
+    } catch (err) {
+      setAuthError(err.response?.data?.detail || 'Doctor authentication failed. Please verify your credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ----------------- FORGOT PASSWORD -----------------
   const handleForgotPasswordSubmit = async (e) => {
     e.preventDefault();
@@ -453,7 +496,7 @@ export default function AuthPage({ onLogin }) {
         {/* ================= RIGHT SECTION: EASY-TO-USE LOGIN FORM ================= */}
         <div className="eyereach-form-panel">
           
-          {/* Portal Switcher (Customer vs Store Owner) */}
+          {/* Portal Switcher (Customer vs Store Owner vs Doctor) */}
           <div className="eyereach-portal-toggle">
             <button
               type="button"
@@ -461,7 +504,7 @@ export default function AuthPage({ onLogin }) {
               onClick={() => { setRole('customer'); setAuthError(null); setAuthSuccess(null); }}
             >
               <User size={18} />
-              <span>Customer Portal</span>
+              <span>Customer</span>
             </button>
             <button
               type="button"
@@ -469,7 +512,15 @@ export default function AuthPage({ onLogin }) {
               onClick={() => { setRole('shop'); setAuthError(null); setAuthSuccess(null); }}
             >
               <Store size={18} />
-              <span>Optical Store Owner</span>
+              <span>Store Owner</span>
+            </button>
+            <button
+              type="button"
+              className={`eyereach-portal-btn ${role === 'doctor' ? 'active-emerald' : ''}`}
+              onClick={() => { setRole('doctor'); setAuthError(null); setAuthSuccess(null); }}
+            >
+              <Stethoscope size={18} />
+              <span>Doctor</span>
             </button>
           </div>
 
@@ -478,14 +529,18 @@ export default function AuthPage({ onLogin }) {
             <h2 className="eyereach-main-heading">
               {role === 'customer' 
                 ? 'Your Vision, Your Care, Your EyeReach.' 
-                : 'Optical Store Management'}
+                : role === 'doctor'
+                  ? 'Doctor & Clinical Review Console'
+                  : 'Optical Store Management'}
             </h2>
             <p className="eyereach-sub-description">
               {role === 'customer'
                 ? (customerMethod === 'mobile' 
                     ? 'Enter your details below for simple, instant access to home testing.' 
                     : 'Sign in with your registered email and password credentials.')
-                : 'Manage optical store inventory, customer frame prescriptions and appointments.'}
+                : role === 'doctor'
+                  ? 'Sign in to review patient biometrics, approve home visits, and prepare spectacle frames.'
+                  : 'Manage optical store inventory, customer frame prescriptions and appointments.'}
             </p>
           </div>
 
@@ -949,6 +1004,86 @@ export default function AuthPage({ onLogin }) {
                     </>
                   )}
                 </div>
+              </form>
+            </div>
+          )}
+
+          {/* ================= DOCTOR / OPTOMETRIST PORTAL ================= */}
+          {role === 'doctor' && (
+            <div className="eyereach-shop-body">
+              <form onSubmit={handleDoctorLogin} className="eyereach-form-stack">
+                <div className="eyereach-field-group">
+                  <label className="eyereach-label">
+                    <span>Doctor / Optometrist Email <strong className="required-star">*</strong></span>
+                  </label>
+                  <div className="eyereach-input-box" style={{ borderColor: '#059669' }}>
+                    <span className="eyereach-input-icon"><Mail size={22} color="#059669" /></span>
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. doctor@eyereach.com"
+                      value={doctorForm.email}
+                      onChange={(e) => setDoctorForm({ ...doctorForm, email: e.target.value })}
+                      className="eyereach-input"
+                    />
+                  </div>
+                </div>
+
+                <div className="eyereach-field-group">
+                  <div className="eyereach-label">
+                    <span>Password <strong className="required-star">*</strong></span>
+                  </div>
+                  <div className="eyereach-input-box" style={{ borderColor: '#059669' }}>
+                    <span className="eyereach-input-icon"><Lock size={22} color="#059669" /></span>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      placeholder="Enter password"
+                      value={doctorForm.password}
+                      onChange={(e) => setDoctorForm({ ...doctorForm, password: e.target.value })}
+                      className="eyereach-input"
+                    />
+                    <button
+                      type="button"
+                      className="eyereach-password-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '0.75rem 0.95rem',
+                  backgroundColor: '#ecfdf5',
+                  border: '1px solid #a7f3d0',
+                  borderRadius: '8px',
+                  fontSize: '0.80rem',
+                  color: '#065f46',
+                  lineHeight: 1.45
+                }}>
+                  <div style={{ fontWeight: 800, marginBottom: '2px' }}>🩺 Clinical Optometry Account:</div>
+                  <div>Default Demo Doctor: <strong>doctor@eyereach.com</strong> (Password: <code>doctor123</code>)</div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="eyereach-action-btn"
+                  style={{
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)'
+                  }}
+                >
+                  {loading ? 'Authenticating Doctor Account...' : (
+                    <>
+                      <span>Sign In to Doctor Console</span>
+                      <ArrowRight size={22} />
+                    </>
+                  )}
+                </button>
               </form>
             </div>
           )}

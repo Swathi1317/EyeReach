@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from ..db.database import get_db
-from ..db.models import Appointment
+from ..db.models import Appointment, Doctor
 
 router = APIRouter(prefix="/api/appointments", tags=["EyeReach Appointments"])
 
@@ -73,6 +73,9 @@ class AppointmentResponse(BaseModel):
     face_sketch_image: Optional[str] = None
     face_analysis_summary: Optional[str] = None
     doctor_access_url: Optional[str] = None
+    doctor_id: Optional[int] = None
+    doctor_name: Optional[str] = None
+    doctor_notes: Optional[str] = None
 
 def unpack_selected_frames(raw_json: Optional[str]) -> List[dict]:
     import json
@@ -205,7 +208,11 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
     import json
     selected_frames_str = json.dumps(data.selected_frames) if data.selected_frames else None
 
-    # 7. Persist to Database
+    # 7. Find Doctor to Assign
+    assigned_doc = db.query(Doctor).filter(Doctor.is_active == True).first()
+    assigned_doc_id = assigned_doc.id if assigned_doc else None
+
+    # Persist to Database with Pending status (Requirement 4: must not automatically become Confirmed)
     new_appt = Appointment(
         appointment_id=new_appointment_id,
         appointment_type=norm_type,
@@ -218,7 +225,8 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
         home_address=home_address.strip() if home_address else None,
         purpose=data.purpose.strip(),
         additional_message=data.additional_message.strip() if data.additional_message else None,
-        status="Confirmed",
+        status="Pending",
+        doctor_id=assigned_doc_id,
         selected_frames_json=selected_frames_str,
         # Face Biometrics
         face_shape=fa.face_shape if fa else None,
@@ -237,6 +245,8 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
     db.add(new_appt)
     db.commit()
     db.refresh(new_appt)
+
+    doc_name = new_appt.doctor.name if new_appt.doctor else (assigned_doc.name if assigned_doc else "Assigned Optometrist")
 
     return AppointmentResponse(
         id=new_appt.id,
@@ -266,28 +276,23 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
         head_circumference_cm=new_appt.head_circumference_cm,
         face_sketch_image=new_appt.face_sketch_image,
         face_analysis_summary=new_appt.face_analysis_summary,
-        doctor_access_url=f"/api/appointments/{new_appt.appointment_id}/doctor-review"
+        doctor_access_url=f"/api/appointments/{new_appt.appointment_id}/doctor-review",
+        doctor_id=new_appt.doctor_id,
+        doctor_name=doc_name,
+        doctor_notes=new_appt.doctor_notes
     )
 
 @router.get("", response_model=List[AppointmentResponse])
 def list_appointments(
     appointment_type: Optional[str] = None,
-    customer_mobile: Optional[str] = None,
-    email: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     List scheduled EyeReach appointments with patient biometrics and face sketches.
-    Can be filtered by customer mobile or email to isolate patient records.
     """
     query = db.query(Appointment)
     if appointment_type:
         query = query.filter(Appointment.appointment_type == normalize_type(appointment_type))
-    if customer_mobile:
-        clean_mob = re.sub(r"\D", "", customer_mobile)[-10:]
-        query = query.filter(Appointment.mobile_number.endswith(clean_mob))
-    if email:
-        query = query.filter(Appointment.email.ilike(email.strip()))
     
     records = query.order_by(Appointment.id.desc()).all()
     
@@ -320,7 +325,10 @@ def list_appointments(
             head_circumference_cm=r.head_circumference_cm,
             face_sketch_image=r.face_sketch_image,
             face_analysis_summary=r.face_analysis_summary,
-            doctor_access_url=f"/api/appointments/{r.appointment_id}/doctor-review"
+            doctor_access_url=f"/api/appointments/{r.appointment_id}/doctor-review",
+            doctor_id=r.doctor_id,
+            doctor_name=r.doctor.name if r.doctor else None,
+            doctor_notes=r.doctor_notes
         )
         for r in records
     ]
@@ -330,7 +338,10 @@ def get_appointment_by_id(appointment_id: str, db: Session = Depends(get_db)):
     """
     Lookup a scheduled appointment by its unique reference number.
     """
-    appt = db.query(Appointment).filter(Appointment.appointment_id == appointment_id.strip()).first()
+    appt = db.query(Appointment).filter(
+        (Appointment.appointment_id == appointment_id.strip()) |
+        (Appointment.id == (int(appointment_id) if appointment_id.isdigit() else -1))
+    ).first()
     if not appt:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -365,7 +376,10 @@ def get_appointment_by_id(appointment_id: str, db: Session = Depends(get_db)):
         head_circumference_cm=appt.head_circumference_cm,
         face_sketch_image=appt.face_sketch_image,
         face_analysis_summary=appt.face_analysis_summary,
-        doctor_access_url=f"/api/appointments/{appt.appointment_id}/doctor-review"
+        doctor_access_url=f"/api/appointments/{appt.appointment_id}/doctor-review",
+        doctor_id=appt.doctor_id,
+        doctor_name=appt.doctor.name if appt.doctor else None,
+        doctor_notes=appt.doctor_notes
     )
 
 @router.get("/{appointment_id}/doctor-review")

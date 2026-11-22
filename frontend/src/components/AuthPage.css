@@ -528,6 +528,13 @@
   font-weight: 700;
 }
 
+.eyereach-portal-btn.active-emerald {
+  background: #ffffff;
+  color: #065f46;
+  box-shadow: 0 3px 10px rgba(5, 150, 105, 0.18);
+  font-weight: 700;
+}
+
 /* Headings */
 .eyereach-login-heading-wrap {
   margin-bottom: 1.6rem;

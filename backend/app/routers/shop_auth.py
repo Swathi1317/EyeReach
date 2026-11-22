@@ -177,3 +177,17 @@ def update_shop_profile(req: ShopProfileUpdate, current_shop: Shop = Depends(get
             "subscription_plan": current_shop.subscription_plan
         }
     }
+
+class ShopPasswordChange(BaseModel):
+    current_password: str
+    new_password: str
+
+@router.put("/password")
+def change_shop_password(req: ShopPasswordChange, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    if current_shop.password_hash != hash_password(req.current_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect.")
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters.")
+    current_shop.password_hash = hash_password(req.new_password)
+    db.commit()
+    return {"status": "success", "message": "Password updated successfully."}

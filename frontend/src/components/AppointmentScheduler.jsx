@@ -113,12 +113,45 @@ export default function AppointmentScheduler({
     axios.get('/api/customer/picks', { headers, params })
       .then((res) => {
         const picksList = res.data?.picks || [];
-        setAvailablePicks(picksList);
+        const combinedMap = new Map();
+
+        // 1. Prioritize pre-selected frames passed from scan recommendations or boutique
+        if (preSelectedFrames && preSelectedFrames.length > 0) {
+          preSelectedFrames.forEach(f => {
+            const pId = String(f.product_id || f.id);
+            combinedMap.set(pId, {
+              product_id: pId,
+              id: f.id || pId,
+              name: f.name,
+              brand: f.brand,
+              shape: f.shape || f.category,
+              color: f.color,
+              price: f.price,
+              material: f.material,
+              front_image: f.front_image || f.image,
+              lens_width_mm: f.lens_width_mm,
+              bridge_width_mm: f.bridge_width_mm,
+              temple_length_mm: f.temple_length_mm
+            });
+          });
+        }
+
+        // 2. Add saved picks from customer collection
+        picksList.forEach(p => {
+          const pId = String(p.product_id || p.id);
+          if (!combinedMap.has(pId)) {
+            combinedMap.set(pId, p);
+          }
+        });
+
+        const combinedList = Array.from(combinedMap.values());
+        setAvailablePicks(combinedList);
+
         const initialSelected = new Set();
         if (preSelectedFrames && preSelectedFrames.length > 0) {
-          preSelectedFrames.forEach(f => initialSelected.add(String(f.product_id || f.id)));
+          preSelectedFrames.slice(0, 10).forEach(f => initialSelected.add(String(f.product_id || f.id)));
         } else {
-          picksList.forEach(p => initialSelected.add(String(p.product_id)));
+          combinedList.slice(0, 10).forEach(p => initialSelected.add(String(p.product_id || p.id)));
         }
         setSelectedFrameIds(initialSelected);
       })
@@ -128,7 +161,7 @@ export default function AppointmentScheduler({
       .finally(() => {
         setLoadingPicks(false);
       });
-  }, [defaultUser?.mobile]);
+  }, [defaultUser?.mobile, preSelectedFrames]);
 
   const handleToggleFrameSelect = (pId) => {
     setSelectedFrameIds(prev => {
@@ -136,6 +169,10 @@ export default function AppointmentScheduler({
       if (next.has(pId)) {
         next.delete(pId);
       } else {
+        if (next.size >= 10) {
+          alert('You can select a maximum of 10 frames to try at home.');
+          return prev;
+        }
         next.add(pId);
       }
       return next;
@@ -143,7 +180,7 @@ export default function AppointmentScheduler({
   };
 
   const handleSelectAllFrames = () => {
-    const all = new Set(availablePicks.map(p => String(p.product_id)));
+    const all = new Set(availablePicks.slice(0, 10).map(p => String(p.product_id || p.id)));
     setSelectedFrameIds(all);
   };
 
@@ -223,6 +260,16 @@ export default function AppointmentScheduler({
 
     if (!homeAddress.trim() || homeAddress.trim().length < 6) {
       setErrorMessage('Please provide your complete home address for the doorstep testing team.');
+      return;
+    }
+
+    if (selectedFrameIds.size === 0) {
+      setErrorMessage('Please select at least 1 spectacle frame (maximum 10 frames) for the doctor/optometrist to bring to your home.');
+      return;
+    }
+
+    if (selectedFrameIds.size > 10) {
+      setErrorMessage('Please select a maximum of 10 spectacle frames for your home visit trial.');
       return;
     }
 
@@ -519,20 +566,52 @@ export default function AppointmentScheduler({
                     </div>
                   </div>
 
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    backgroundColor: '#dcfce7',
-                    color: '#15803d',
-                    padding: '6px 14px',
-                    borderRadius: '999px',
-                    fontWeight: 700,
-                    fontSize: '0.85rem'
-                  }}>
-                    <CheckCircle2 size={15} />
-                    {confirmationData.status}
-                  </span>
+                  {confirmationData.status === 'Pending' ? (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#fef3c7',
+                      color: '#b45309',
+                      padding: '6px 14px',
+                      borderRadius: '999px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem'
+                    }}>
+                      <Clock size={15} />
+                      Pending Doctor Review
+                    </span>
+                  ) : confirmationData.status === 'Rejected' ? (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#fee2e2',
+                      color: '#b91c1c',
+                      padding: '6px 14px',
+                      borderRadius: '999px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem'
+                    }}>
+                      <AlertCircle size={15} />
+                      Rejected
+                    </span>
+                  ) : (
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      backgroundColor: '#dcfce7',
+                      color: '#15803d',
+                      padding: '6px 14px',
+                      borderRadius: '999px',
+                      fontWeight: 700,
+                      fontSize: '0.85rem'
+                    }}>
+                      <CheckCircle2 size={15} />
+                      {confirmationData.status}
+                    </span>
+                  )}
                 </div>
 
                 <div style={{
@@ -1203,14 +1282,14 @@ export default function AppointmentScheduler({
                         Select the frames you want our representative to bring to your home:
                       </span>
                       <span style={{
-                        backgroundColor: '#ccfbf1',
-                        color: '#115e59',
-                        padding: '2px 10px',
+                        backgroundColor: selectedFrameIds.size >= 1 && selectedFrameIds.size <= 10 ? '#ccfbf1' : '#fee2e2',
+                        color: selectedFrameIds.size >= 1 && selectedFrameIds.size <= 10 ? '#115e59' : '#b91c1c',
+                        padding: '3px 12px',
                         borderRadius: '999px',
                         fontWeight: 700,
-                        fontSize: '0.74rem'
+                        fontSize: '0.76rem'
                       }}>
-                        {selectedFrameIds.size} of {availablePicks.length} selected
+                        Selected: {selectedFrameIds.size} / 10 frames (Min 1, Max 10)
                       </span>
                     </div>
 
@@ -1220,11 +1299,12 @@ export default function AppointmentScheduler({
                       gap: '12px'
                     }}>
                       {availablePicks.map((pick) => {
-                        const isSelected = selectedFrameIds.has(String(pick.product_id));
+                        const pickId = String(pick.product_id || pick.id);
+                        const isSelected = selectedFrameIds.has(pickId);
                         return (
                           <div
-                            key={pick.product_id}
-                            onClick={() => handleToggleFrameSelect(String(pick.product_id))}
+                            key={pickId}
+                            onClick={() => handleToggleFrameSelect(pickId)}
                             style={{
                               padding: '10px 12px',
                               borderRadius: '12px',

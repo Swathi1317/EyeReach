@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import axios from 'axios';
-import { Camera, RefreshCw, AlertTriangle, ArrowLeft, CheckCircle2, X } from 'lucide-react';
+import { Camera, RefreshCw, AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, X, Glasses } from 'lucide-react';
 import './App.css';
 import VirtualTryOn from './components/VirtualTryOn';
 import FitStabilityReport from './components/FitStabilityReport';
@@ -8,6 +8,7 @@ import AuthPage, { EyeReachLogo } from './components/AuthPage';
 import ShopDashboard from './components/ShopDashboard/ShopDashboard';
 import CustomerPortal from './components/CustomerPortal/CustomerPortal';
 import AppointmentScheduler from './components/AppointmentScheduler';
+import DoctorDashboard from './components/DoctorDashboard/DoctorDashboard';
 
 const API_BASE = '';
 
@@ -262,6 +263,22 @@ function App() {
   const [welcomeNotice, setWelcomeNotice] = useState(null); // { name: string, isReturning: boolean }
   const [activeView, setActiveView] = useState('dashboard'); // 'dashboard' | 'scanner'
   const [homeVisitSelectedFrames, setHomeVisitSelectedFrames] = useState([]);
+  const [selectedScanFrames, setSelectedScanFrames] = useState([]);
+
+  const handleToggleScanFrameSelection = (frame) => {
+    setSelectedScanFrames((prev) => {
+      const exists = prev.some((f) => f.id === frame.id);
+      if (exists) {
+        return prev.filter((f) => f.id !== frame.id);
+      } else {
+        if (prev.length >= 10) {
+          alert('You can select a maximum of 10 frames to bring for home testing.');
+          return prev;
+        }
+        return [...prev, frame];
+      }
+    });
+  };
   const [scanMode, setScanMode] = useState('three_view'); // 'straight' | 'three_view'
   const [stream, setStream] = useState(null);
   const [sessionState, setSessionState] = useState(AUTO_STATES.IDLE);
@@ -281,7 +298,7 @@ function App() {
       .then((res) => {
         if (res.data?.status === 'success') {
           const role = res.data.role;
-          const userData = role === 'shop_owner' ? res.data.shop : res.data.customer;
+          const userData = role === 'shop_owner' ? res.data.shop : (role === 'doctor' ? res.data.doctor : res.data.customer);
           const fullUser = {
             isGuest: false,
             role: role || 'customer',
@@ -291,6 +308,8 @@ function App() {
           setIsAuthenticated(true);
           if (role === 'shop_owner') {
             setActiveView('shop_dashboard');
+          } else if (role === 'doctor') {
+            setActiveView('doctor_dashboard');
           } else {
             setActiveView('catalog');
           }
@@ -2218,7 +2237,11 @@ function App() {
       };
 
       const recRes = await axios.post(`${API_BASE}/api/recommendations`, reqBody);
-      setRecommendations(recRes.data.recommendations);
+      const recs = recRes.data?.recommendations || [];
+      setRecommendations(recs);
+      if (recs.length > 0) {
+        setSelectedScanFrames(recs.slice(0, 3));
+      }
       setShowResults(true);
       setSessionState(SMART_GUIDED_STATES.COMPLETE);
     } catch (err) {
@@ -2596,6 +2619,8 @@ function App() {
           setCurrentUser(fullUser);
           if (fullUser?.role === 'shop_owner') {
             setActiveView('shop_dashboard');
+          } else if (fullUser?.role === 'doctor') {
+            setActiveView('doctor_dashboard');
           } else {
             setActiveView('catalog');
           }
@@ -2608,6 +2633,19 @@ function App() {
           }
         }} 
       />
+    );
+  }
+
+  // Doctor & Optometrist Dashboard Flow
+  if (currentUser?.role === 'doctor' || activeView === 'doctor_dashboard') {
+    return (
+      <>
+        {renderWelcomeBanner()}
+        <DoctorDashboard
+          doctorUser={currentUser}
+          onLogout={handleLogout}
+        />
+      </>
     );
   }
 
@@ -4385,20 +4423,54 @@ function App() {
             {isLoadingRecs ? (
               <div className="secondary-stat">Calculating scores based on your features...</div>
             ) : recommendations && recommendations.length > 0 ? (
-              <div className="frames-grid">
-                {recommendations.map(frame => {
+              (() => {
+                const renderRecommendationCard = (frame, isTop = false, rankIndex = null) => {
                   const sizeBadge = getFrameSizeBadge(frame.frame_width_mm);
                   const budgetBadge = getBudgetBadge(frame.price, maxBudget);
                   const fitBadge = getVisualFitStatusBadge(frame);
                   const hasPrice = frame.price && frame.price !== 'N/A' && frame.price !== 'Unavailable';
                   const styleScore = frame.style_compatibility_score != null ? Math.round(frame.style_compatibility_score) : Math.round(frame.final_score);
                   const isExpanded = expandedSpecsId === frame.id;
+                  const isFrameSelected = selectedScanFrames.some(f => f.id === frame.id);
 
                   return (
-                    <div key={frame.id} className="frame-card" style={{ display: 'flex', flexDirection: 'column', background: '#ffffff', borderRadius: '12px', border: '1px solid var(--border)', padding: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                      
-                      {/* 1. Product Image with SVG Placeholder Fallback */}
-                      <div className="frame-image-box" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem', height: '145px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    <div
+                      key={frame.id}
+                      className="frame-card"
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        border: isFrameSelected
+                          ? '2.5px solid #059669'
+                          : (isTop ? '2px solid #10b981' : '1px solid var(--border)'),
+                        padding: '1rem',
+                        boxShadow: isTop ? '0 4px 14px rgba(16, 185, 129, 0.15)' : '0 2px 8px rgba(0,0,0,0.04)',
+                        position: 'relative'
+                      }}
+                    >
+                      {/* Top 5 Highlight Badge */}
+                      {isTop && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '-10px',
+                          left: '12px',
+                          backgroundColor: '#059669',
+                          color: '#ffffff',
+                          fontSize: '0.70rem',
+                          fontWeight: 800,
+                          padding: '2px 8px',
+                          borderRadius: '999px',
+                          letterSpacing: '0.04em',
+                          boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)'
+                        }}>
+                          ⭐ Top 5 AI Pick #{rankIndex != null ? rankIndex + 1 : frame.rank || 1}
+                        </div>
+                      )}
+
+                      {/* 1. Product Image */}
+                      <div className="frame-image-box" style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem', height: '145px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', marginTop: isTop ? '4px' : '0' }}>
                         {!imgError[frame.id] && frame.image ? (
                           <img 
                             src={frame.image} 
@@ -4414,25 +4486,18 @@ function App() {
                           />
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', gap: '6px' }}>
-                            <svg width="44" height="22" viewBox="0 0 48 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <circle cx="12" cy="12" r="9" />
-                              <circle cx="36" cy="12" r="9" />
-                              <line x1="21" y1="12" x2="27" y2="12" />
-                            </svg>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>Frame Image</span>
+                            <Glasses size={32} />
+                            <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>Optical Frame</span>
                           </div>
                         )}
                       </div>
 
                       {/* Card Content */}
                       <div style={{ marginTop: '0.85rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        
-                        {/* 2. Frame Name */}
                         <h4 style={{ fontSize: '1.05rem', fontWeight: 700, margin: '0 0 0.35rem 0', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={frame.name}>
                           {frame.name}
                         </h4>
 
-                        {/* 3. Actual Product Price */}
                         <div style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
                           <span style={{ fontSize: '1.15rem', fontWeight: 800, color: hasPrice ? '#0d7665' : '#64748b' }}>
                             {hasPrice ? `₹${frame.price}` : 'Price unlisted'}
@@ -4442,30 +4507,23 @@ function App() {
                           </span>
                         </div>
 
-                        {/* Badges Row: Size, Budget, Style Match, Visual Fit */}
+                        {/* Badges Row */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '0.75rem' }}>
-                          {/* 4. Frame Size Category */}
                           <span style={{ fontSize: '0.74rem', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: sizeBadge.bg, color: sizeBadge.color }}>
                             📏 {sizeBadge.label}
                           </span>
-
-                          {/* 5. Budget Compatibility */}
                           <span style={{ fontSize: '0.74rem', fontWeight: 600, padding: '2px 8px', borderRadius: '4px', background: budgetBadge.bg, color: budgetBadge.color }}>
                             🏷️ {budgetBadge.label}
                           </span>
-
-                          {/* 6. Style Match Percentage */}
-                          <span style={{ fontSize: '0.74rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: '#dbeafe', color: '#1d4ed8' }}>
+                          <span style={{ fontSize: '0.74rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: isTop ? '#dcfce7' : '#dbeafe', color: isTop ? '#15803d' : '#1d4ed8' }}>
                             ✨ {styleScore}% Match
                           </span>
-
-                          {/* 7. Visual Fit Status */}
                           <span style={{ fontSize: '0.74rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px', background: fitBadge.bg, color: fitBadge.color }}>
                             🎯 {fitBadge.label}
                           </span>
                         </div>
 
-                        {/* Expandable Technical Details Drawer (Clean & Non-intrusive) */}
+                        {/* Specifications Drawer */}
                         <div style={{ marginTop: 'auto' }}>
                           <button
                             type="button"
@@ -4524,13 +4582,39 @@ function App() {
                         </div>
                       </div>
 
-                      {/* 8. One Try On Button */}
+                      {/* Select for Home Visit Button (Requirement 5 & 6) */}
+                      <button
+                        type="button"
+                        onClick={() => handleToggleScanFrameSelection(frame)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem 0.85rem',
+                          marginBottom: '0.45rem',
+                          borderRadius: '8px',
+                          border: isFrameSelected ? '2px solid #059669' : '1px solid #cbd5e1',
+                          backgroundColor: isFrameSelected ? '#ecfdf5' : '#ffffff',
+                          color: isFrameSelected ? '#065f46' : '#334155',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {isFrameSelected ? <CheckCircle2 size={16} color="#059669" /> : <Glasses size={16} />}
+                        <span>{isFrameSelected ? '✓ Selected for Home Trial' : '+ Select for Home Trial'}</span>
+                      </button>
+
+                      {/* Try On Button */}
                       <button 
                         className="btn-card-tryon"
                         style={{
                           width: '100%', 
-                          padding: '0.7rem 1rem', 
-                          fontSize: '0.92rem', 
+                          padding: '0.65rem 1rem', 
+                          fontSize: '0.90rem', 
                           fontWeight: 700,
                           backgroundColor: '#0d7665',
                           color: '#ffffff',
@@ -4565,11 +4649,169 @@ function App() {
                           ✓ View Fit Report
                         </button>
                       )}
-
                     </div>
                   );
-                })}
-              </div>
+                };
+
+                const topRecs = recommendations.slice(0, 5);
+                const remainingRecs = recommendations.slice(5);
+
+                return (
+                  <div>
+                    {/* Top 5 AI Clinical Recommendations Header */}
+                    <div style={{ marginBottom: '1.25rem', marginTop: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#064e3b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span>⭐ Top 5 AI Clinical Recommendations</span>
+                          </h3>
+                          <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                            Highest ranked frames matched precisely to your {phase1Result?.face_shape || ''} face shape and {phase2Result?.ipd?.ipd_mm?.toFixed(1) || ''} mm IPD.
+                          </p>
+                        </div>
+                        <span style={{
+                          backgroundColor: '#ecfdf5',
+                          color: '#065f46',
+                          border: '1px solid #a7f3d0',
+                          padding: '4px 12px',
+                          borderRadius: '999px',
+                          fontSize: '0.78rem',
+                          fontWeight: 800
+                        }}>
+                          Top 5 Recommended
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="frames-grid" style={{ marginBottom: '2rem' }}>
+                      {topRecs.map((frame, idx) => renderRecommendationCard(frame, true, idx))}
+                    </div>
+
+                    {/* Remaining Suitable Frames Section */}
+                    {remainingRecs.length > 0 && (
+                      <>
+                        <div style={{ marginBottom: '1.25rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.75rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <div>
+                              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
+                                More Suitable Optical Frames ({remainingRecs.length} styles available)
+                              </h3>
+                              <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                                Browse additional frame designs and color options compatible with your face geometry.
+                              </p>
+                            </div>
+                            <span style={{
+                              backgroundColor: '#f1f5f9',
+                              color: '#475569',
+                              padding: '4px 12px',
+                              borderRadius: '999px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700
+                            }}>
+                              Total Suitable: {recommendations.length} Frames
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="frames-grid">
+                          {remainingRecs.map((frame, idx) => renderRecommendationCard(frame, false, idx + 5))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Pinned Sticky Bar for Doorstep Frame Selection */}
+                    <div style={{
+                      position: 'sticky',
+                      bottom: '1rem',
+                      zIndex: 50,
+                      backgroundColor: '#064e3b',
+                      color: '#ffffff',
+                      padding: '0.9rem 1.4rem',
+                      borderRadius: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 8px 24px rgba(6, 78, 59, 0.35)',
+                      flexWrap: 'wrap',
+                      gap: '12px',
+                      marginTop: '2rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Glasses size={26} color="#a7f3d0" />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.98rem' }}>
+                            Doorstep Frame Trial: {selectedScanFrames.length} / 10 Frames Selected
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#a7f3d0' }}>
+                            {selectedScanFrames.length === 0
+                              ? 'Select at least 1 frame (min 1, max 10) to book home visit'
+                              : 'Our optometrist will carry these exact spectacle frames to your home'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {selectedScanFrames.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedScanFrames([])}
+                            style={{
+                              padding: '7px 12px',
+                              borderRadius: '6px',
+                              backgroundColor: 'rgba(255,255,255,0.12)',
+                              border: 'none',
+                              color: '#ffffff',
+                              fontSize: '0.76rem',
+                              fontWeight: 600,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Clear Selection
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={selectedScanFrames.length === 0 || selectedScanFrames.length > 10}
+                          onClick={() => {
+                            setHomeVisitSelectedFrames(selectedScanFrames.map(f => ({
+                              product_id: f.id,
+                              id: f.id,
+                              name: f.name,
+                              brand: f.brand,
+                              shape: f.shape || f.category,
+                              color: f.color,
+                              price: f.price,
+                              front_image: f.image || f.front_image,
+                              lens_width_mm: f.lens_width_mm,
+                              bridge_width_mm: f.bridge_width_mm,
+                              temple_length_mm: f.temple_length_mm
+                            })));
+                            setActiveView('appointment');
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: (selectedScanFrames.length >= 1 && selectedScanFrames.length <= 10) ? '#10b981' : '#64748b',
+                            color: '#ffffff',
+                            fontSize: '0.90rem',
+                            fontWeight: 800,
+                            cursor: (selectedScanFrames.length >= 1 && selectedScanFrames.length <= 10) ? 'pointer' : 'not-allowed',
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+                          }}
+                        >
+                          <span>Proceed to Home Visit Booking ({selectedScanFrames.length} frames)</span>
+                          <ArrowRight size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()
             ) : (
               <div style={{padding: '2.5rem 1rem', textAlign: 'center', background: 'var(--panel-bg)', borderRadius: '8px', border: '1px solid var(--border)'}}>
                 <div style={{fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.4rem'}}>

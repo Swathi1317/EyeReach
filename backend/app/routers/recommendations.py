@@ -136,6 +136,8 @@ class RecommendationResponse(BaseModel):
     shop_name: Optional[str] = None
     side_image: Optional[str] = None
     angled_image: Optional[str] = None
+    rank: Optional[int] = 1
+    is_top_recommendation: Optional[bool] = False
 
 class RecommendationResult(BaseModel):
     recommendations: List[RecommendationResponse]
@@ -635,14 +637,13 @@ def get_recommendations(req: RecommendationRequest):
         })
         
     # Sort by score descending
-    scored_frames.sort(key=lambda x: x["final_score"], reverse=True)
-    
-    # Top 5
-    top_frames = scored_frames[:5]
+    # Return 24–30 suitable frames in total (Requirement 5: approximately 22–30 suitable frames total, top 5 highlighted)
+    top_frames = scored_frames[:28]
     
     response = []
-    for sf in top_frames:
+    for idx, sf in enumerate(top_frames):
         f = sf["frame"]
+        is_top = (idx < 5)
         
         response.append(RecommendationResponse(
             id=f["id"],
@@ -677,11 +678,10 @@ def get_recommendations(req: RecommendationRequest):
             color_match=sf["color_match"],
             shop_name=f.get("shop_name", "VisionCraft Opticians"),
             side_image=f.get("side_image") or f.get("image"),
-            angled_image=f.get("angled_image") or f.get("image")
+            angled_image=f.get("angled_image") or f.get("image"),
+            rank=idx + 1,
+            is_top_recommendation=is_top
         ))
-        
-    # Re-sort the final top 5 so they display in perfectly descending order in the UI
-    response.sort(key=lambda x: x.final_score, reverse=True)
         
     return RecommendationResult(recommendations=response)
 

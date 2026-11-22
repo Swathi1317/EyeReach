@@ -28,9 +28,16 @@ import {
   RefreshCw,
   Eye,
   Info,
-  ShieldCheck
+  ShieldCheck,
+  Stethoscope,
+  CheckCircle2,
+  X
 } from 'lucide-react';
-import BusinessModelModal from '../BusinessModelModal';
+
+const getAuthHeaders = () => {
+  const token = localStorage.getItem('smartframe_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }) {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -43,7 +50,40 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
   const [genderFilter, setGenderFilter] = useState('All');
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [showBusinessModal, setShowBusinessModal] = useState(false);
+
+  // Doctor Management State
+  const [doctors, setDoctors] = useState([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
+  const [showAddDoctorModal, setShowAddDoctorModal] = useState(false);
+  const [newDoctorForm, setNewDoctorForm] = useState({
+    name: '',
+    email: '',
+    mobile: '',
+    specialization: 'Optometrist & Ophthalmic Dispenser',
+    qualification: 'M.Optom, FAAO',
+    registration_number: '',
+    password: ''
+  });
+  const [doctorSubmitMsg, setDoctorSubmitMsg] = useState(null);
+
+  // Edit Frame State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editSubmitMsg, setEditSubmitMsg] = useState(null);
+
+  // Real Spectacles Gallery Picker State
+  const [realGallery, setRealGallery] = useState([]);
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+  const [galleryTarget, setGalleryTarget] = useState('add'); // 'add' | 'edit'
+
+  // Owner Password Change State
+  const [passwordForm, setPasswordForm] = useState({
+    current_password: '',
+    new_password: '',
+    confirm_password: ''
+  });
+  const [passwordMsg, setPasswordMsg] = useState(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // Customer Frame Preferences State
   const [preferencesData, setPreferencesData] = useState(null);
@@ -67,9 +107,9 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     stock_quantity: 10,
     gender_category: 'Unisex',
     description: '',
-    front_image: '/frames/frame_001.svg',
-    side_image: '/frames/frame_001.svg',
-    angled_image: '/frames/frame_001.svg'
+    front_image: '/frames/kaggle/0_mt6960_0.png',
+    side_image: '/frames/kaggle/0_mt6960_0.png',
+    angled_image: '/frames/kaggle/0_mt6960_0.png'
   });
   const [aiDescLoading, setAiDescLoading] = useState(false);
   const [singleSubmitMsg, setSingleSubmitMsg] = useState(null);
@@ -170,12 +210,35 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     }
   };
 
+  const fetchDoctors = async () => {
+    setLoadingDoctors(true);
+    try {
+      const res = await axios.get('/api/shop/doctors', { headers: getAuthHeaders() });
+      setDoctors(res.data.doctors || []);
+    } catch (err) {
+      console.error('Error fetching doctors:', err);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
+
+  const fetchRealGallery = async () => {
+    try {
+      const res = await axios.get('/api/shop/real-frames-gallery');
+      setRealGallery(res.data.images || []);
+    } catch (err) {
+      console.error('Error fetching real frames gallery:', err);
+    }
+  };
+
   useEffect(() => {
     fetchStats();
     fetchProducts();
     fetchOrders();
     fetchCustomers();
     fetchCustomerPreferences();
+    fetchDoctors();
+    fetchRealGallery();
   }, []);
 
   useEffect(() => {
@@ -189,6 +252,8 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
       fetchCustomers();
     } else if (activeTab === 'preferences') {
       fetchCustomerPreferences();
+    } else if (activeTab === 'doctors') {
+      fetchDoctors();
     }
   }, [activeTab, shapeFilter, genderFilter]);
 
@@ -197,14 +262,14 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     setAiDescLoading(true);
     try {
       const res = await axios.post('/api/shop/ai/generate-description', {
-        brand: singleForm.brand || 'SmartFrame Studio',
+        brand: singleForm.brand || 'EyeReach Studio',
         shape: singleForm.shape,
         material: singleForm.material,
         color: singleForm.color,
         frame_type: singleForm.frame_type,
         size: singleForm.size,
         gender: singleForm.gender_category
-      });
+      }, { headers: getAuthHeaders() });
       setSingleForm((prev) => ({
         ...prev,
         description: res.data.description
@@ -216,16 +281,16 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     }
   };
 
-  // Handle Single Frame Submit
+  // Handle Single Frame Submit (Requirement 1 - Real spectacle frames only)
   const handleSingleSubmit = async (e) => {
     e.preventDefault();
     setSingleSubmitMsg(null);
     try {
-      const res = await axios.post('/api/shop/products', singleForm);
-      setSingleSubmitMsg({ type: 'success', text: res.data.message });
+      const res = await axios.post('/api/shop/products', singleForm, { headers: getAuthHeaders() });
+      setSingleSubmitMsg({ type: 'success', text: res.data.message || 'Frame added successfully to store inventory!' });
       fetchProducts();
       fetchStats();
-      // Reset form
+      // Reset form with real optical photo default
       setSingleForm({
         product_id: '',
         brand: '',
@@ -242,15 +307,55 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
         stock_quantity: 10,
         gender_category: 'Unisex',
         description: '',
-        front_image: '/frames/frame_001.svg',
-        side_image: '/frames/frame_001.svg',
-        angled_image: '/frames/frame_001.svg'
+        front_image: '/frames/kaggle/0_mt6960_0.png',
+        side_image: '/frames/kaggle/0_mt6960_0.png',
+        angled_image: '/frames/kaggle/0_mt6960_0.png'
       });
     } catch (err) {
       setSingleSubmitMsg({
         type: 'error',
         text: err.response?.data?.detail || 'Failed to add frame.'
       });
+    }
+  };
+
+  // Edit Product Submit
+  const handleOpenEditModal = (p) => {
+    setEditingProduct({
+      id: p.id,
+      product_id: p.product_id,
+      name: p.name,
+      brand: p.brand,
+      shape: p.shape,
+      material: p.material,
+      color: p.color,
+      frame_type: p.frame_type || 'Full Rim',
+      price: p.price,
+      stock_quantity: p.stock_quantity != null ? p.stock_quantity : 10,
+      lens_width_mm: p.lens_width_mm || 50,
+      bridge_width_mm: p.bridge_width_mm || 18,
+      temple_length_mm: p.temple_length_mm || 140,
+      front_image: p.front_image,
+      description: p.description || ''
+    });
+    setEditSubmitMsg(null);
+    setEditModalOpen(true);
+  };
+
+  const handleEditProductSubmit = async (e) => {
+    e.preventDefault();
+    setEditSubmitMsg(null);
+    try {
+      await axios.put(`/api/shop/products/${editingProduct.id}`, editingProduct, { headers: getAuthHeaders() });
+      setEditSubmitMsg({ type: 'success', text: 'Frame details updated successfully!' });
+      fetchProducts();
+      fetchStats();
+      setTimeout(() => {
+        setEditModalOpen(false);
+        setEditSubmitMsg(null);
+      }, 1200);
+    } catch (err) {
+      setEditSubmitMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to update frame.' });
     }
   };
 
@@ -266,7 +371,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     formData.append('file', bulkFile);
 
     try {
-      const res = await axios.post('/api/shop/products/bulk-upload', formData);
+      const res = await axios.post('/api/shop/products/bulk-upload', formData, { headers: getAuthHeaders() });
       setBulkReport(res.data);
       fetchProducts();
       fetchStats();
@@ -295,7 +400,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
         gender: aiGender,
         design_style: aiStyle,
         size: aiSize
-      });
+      }, { headers: getAuthHeaders() });
       setGeneratedResult(res.data);
     } catch (err) {
       alert('Failed to generate frame image.');
@@ -312,7 +417,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
       const pId = `AI-${Math.floor(1000 + Math.random() * 9000)}`;
       const res = await axios.post('/api/shop/ai/approve-and-save', {
         product_id: pId,
-        brand: 'SmartFrame AI Studio',
+        brand: 'EyeReach Studio',
         name: `${generatedResult.specs?.color || ''} ${generatedResult.specs?.shape || 'Eyewear'}`,
         shape: generatedResult.specs?.shape || 'Rectangle',
         material: generatedResult.specs?.material || 'Acetate',
@@ -324,7 +429,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
         gender_category: 'Unisex',
         description: `AI-Synthesized spectacle frame. ${generatedResult.prompt_interpreted}`,
         image_url: generatedResult.image_url
-      });
+      }, { headers: getAuthHeaders() });
 
       setApproveMsg({ type: 'success', text: res.data.message });
       fetchProducts();
@@ -334,22 +439,94 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     }
   };
 
-  // Delete product
+  // Delete product (Requirement 1 - Fix deleting frames safely)
   const handleDeleteProduct = async (id, name) => {
-    if (!window.confirm(`Delete frame "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete frame "${name}" (ID: ${id}) from store catalog?`)) return;
     try {
-      await axios.delete(`/api/shop/products/${id}`);
+      const res = await axios.delete(`/api/shop/products/${id}`, { headers: getAuthHeaders() });
+      alert(res.data?.message || `Frame "${name}" was deleted successfully.`);
       fetchProducts();
       fetchStats();
     } catch (err) {
-      alert('Failed to delete product.');
+      alert(err.response?.data?.detail || 'Failed to delete product.');
+    }
+  };
+
+  // Add & Link Doctor (Requirement 3)
+  const handleAddDoctorSubmit = async (e) => {
+    e.preventDefault();
+    setDoctorSubmitMsg(null);
+    try {
+      await axios.post('/api/shop/doctors', newDoctorForm, { headers: getAuthHeaders() });
+      setDoctorSubmitMsg({ type: 'success', text: 'Doctor / Optometrist added and linked successfully!' });
+      fetchDoctors();
+      setNewDoctorForm({
+        name: '',
+        email: '',
+        mobile: '',
+        specialization: 'Optometrist & Ophthalmic Dispenser',
+        qualification: 'M.Optom, FAAO',
+        registration_number: '',
+        password: ''
+      });
+      setTimeout(() => {
+        setShowAddDoctorModal(false);
+        setDoctorSubmitMsg(null);
+      }, 1500);
+    } catch (err) {
+      setDoctorSubmitMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to link doctor.' });
+    }
+  };
+
+  // Assign Doctor to Appointment (Requirement 3)
+  const handleAssignDoctor = async (appointmentId, doctorId) => {
+    try {
+      await axios.put(
+        `/api/shop/appointments/${appointmentId}/assign`,
+        { doctor_id: doctorId },
+        { headers: getAuthHeaders() }
+      );
+      fetchCustomerPreferences();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to assign doctor.');
+    }
+  };
+
+  // Owner Change Password (Requirement 8)
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setPasswordMsg(null);
+    if (!passwordForm.current_password || !passwordForm.new_password) {
+      setPasswordMsg({ type: 'error', text: 'Please fill in all password fields.' });
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordMsg({ type: 'error', text: 'New password and confirmation do not match.' });
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await axios.put(
+        '/api/shop/password',
+        {
+          current_password: passwordForm.current_password,
+          new_password: passwordForm.new_password
+        },
+        { headers: getAuthHeaders() }
+      );
+      setPasswordMsg({ type: 'success', text: 'Owner password updated successfully!' });
+      setPasswordForm({ current_password: '', new_password: '', confirm_password: '' });
+    } catch (err) {
+      setPasswordMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to change password.' });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
   // Update order status
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
-      await axios.patch(`/api/shop/orders/${orderId}/status`, { status: newStatus });
+      await axios.patch(`/api/shop/orders/${orderId}/status`, { status: newStatus }, { headers: getAuthHeaders() });
       fetchOrders();
       fetchStats();
     } catch (err) {
@@ -357,16 +534,16 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     }
   };
 
-  // Update Profile
+  // Update Profile (Requirement 8)
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     setProfileMsg(null);
     try {
-      const res = await axios.put('/api/shop/profile', profileForm);
-      setProfileMsg({ type: 'success', text: res.data.message });
+      const res = await axios.put('/api/shop/profile', profileForm, { headers: getAuthHeaders() });
+      setProfileMsg({ type: 'success', text: res.data?.message || 'Store profile saved successfully!' });
       fetchStats();
     } catch (err) {
-      setProfileMsg({ type: 'error', text: 'Failed to update profile.' });
+      setProfileMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to update store profile.' });
     }
   };
 
@@ -375,13 +552,12 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
     { id: 'preferences', label: 'Customer Frame Preferences', icon: Glasses },
     { id: 'inventory', label: 'Frame Inventory', icon: Glasses },
     { id: 'add_frame', label: 'Add New Frame', icon: PlusCircle },
-    { id: 'bulk_upload', label: 'Bulk Upload', icon: UploadCloud },
-    { id: 'ai_generator', label: 'AI Frame Generator', icon: Wand2 },
+    { id: 'doctors', label: 'Doctors & Optometrists', icon: Stethoscope },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'analytics', label: 'Analytics & Pitch', icon: BarChart3 },
+    { id: 'analytics', label: 'Store Analytics', icon: BarChart3 },
     { id: 'profile', label: 'Shop Profile', icon: Store },
-    { id: 'settings', label: 'Settings & B2B SaaS', icon: Settings }
+    { id: 'settings', label: 'Owner Settings', icon: Settings }
   ];
 
   return (
@@ -556,26 +732,6 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button
-              onClick={() => setShowBusinessModal(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '0.45rem 0.95rem',
-                borderRadius: '8px',
-                background: '#fef3c7',
-                border: '1px solid #fde68a',
-                color: '#92400e',
-                fontSize: '0.82rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              <TrendingUp size={16} />
-              <span>TAM / SAM Pitch</span>
-            </button>
-
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{
                 width: '36px',
@@ -827,24 +983,24 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                   }}>
                     <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#64748b' }}>Total Frames Saved</span>
-                        <Glasses size={18} color="#0d9488" />
+                        <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#64748b' }}>Total Frame Views</span>
+                        <Eye size={18} color="#0284c7" />
                       </div>
-                      <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#0d9488', margin: '4px 0' }}>
-                        {preferencesData?.total_likes || 0}
+                      <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#0284c7', margin: '4px 0' }}>
+                        {preferencesData?.total_views || 0}
                       </div>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Saved across customer collections</div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Catalogue & 3D Try-On views</div>
                     </div>
 
                     <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#64748b' }}>Unique Customers</span>
-                        <Users size={18} color="#0284c7" />
+                        <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#64748b' }}>Total Frame Selections</span>
+                        <Glasses size={18} color="#059669" />
                       </div>
-                      <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#0284c7', margin: '4px 0' }}>
-                        {preferencesData?.unique_customers || 0}
+                      <div style={{ fontSize: '1.9rem', fontWeight: 900, color: '#059669', margin: '4px 0' }}>
+                        {preferencesData?.total_selections || 0}
                       </div>
-                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Shoppers picking favourite frames</div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Collection picks & home trials</div>
                     </div>
 
                     <div style={{ background: '#ffffff', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
@@ -856,7 +1012,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                         {preferencesData?.popular_shapes?.[0]?.shape || 'Round'}
                       </div>
                       <div style={{ fontSize: '0.74rem', color: '#0f766e', fontWeight: 600 }}>
-                        {preferencesData?.popular_shapes?.[0]?.likes || 0} likes ({preferencesData?.popular_shapes?.[0]?.percentage || 0}%)
+                        {preferencesData?.popular_shapes?.[0]?.likes || 0} customer preferences
                       </div>
                     </div>
 
@@ -869,12 +1025,12 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                         {preferencesData?.popular_colors?.[0]?.color || 'Black'}
                       </div>
                       <div style={{ fontSize: '0.74rem', color: '#b45309', fontWeight: 600 }}>
-                        {preferencesData?.popular_colors?.[0]?.likes || 0} likes ({preferencesData?.popular_colors?.[0]?.percentage || 0}%)
+                        {preferencesData?.popular_colors?.[0]?.likes || 0} customer preferences
                       </div>
                     </div>
                   </div>
 
-                  {/* Combination of Popular Shapes and Colours (Core User Requirement) */}
+                  {/* Combination of Popular Shapes and Colours */}
                   <div style={{
                     background: '#ffffff',
                     borderRadius: '16px',
@@ -900,7 +1056,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                         fontSize: '0.75rem',
                         fontWeight: 700
                       }}>
-                        Real Database Preferences
+                        Real Database Statistics
                       </span>
                     </div>
 
@@ -937,7 +1093,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                                 fontWeight: 800,
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center'
+                                justifyCenter: 'center'
                               }}>
                                 #{idx + 1}
                               </span>
@@ -961,7 +1117,6 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                               {combo.shape} shape in {combo.color} frame
                             </div>
 
-                            {/* Mini progress bar */}
                             <div style={{ width: '100%', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
                               <div style={{
                                 width: `${combo.percentage}%`,
@@ -980,7 +1135,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                     </div>
                   </div>
 
-                  {/* Most Liked Frame Models Table */}
+                  {/* TABLE 1: MOST VIEWED FRAMES (Requirement 7) */}
                   <div style={{
                     background: '#ffffff',
                     borderRadius: '16px',
@@ -989,15 +1144,26 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                     marginBottom: '2rem',
                     boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '8px' }}>
                       <div>
-                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>
-                          Most Liked Frame Models
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Eye size={20} />
+                          <span>Most Viewed Frames</span>
                         </h3>
                         <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
-                          Individual catalogue items receiving the highest number of customer likes.
+                          Individual catalogue items receiving the highest customer view counts and 3D Virtual Try-On impressions.
                         </p>
                       </div>
+                      <span style={{
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        padding: '4px 10px',
+                        borderRadius: '999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700
+                      }}>
+                        Exact Database Views
+                      </span>
                     </div>
 
                     <div style={{ overflowX: 'auto' }}>
@@ -1008,12 +1174,12 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                             <th style={{ padding: '0.75rem 1rem' }}>Shape</th>
                             <th style={{ padding: '0.75rem 1rem' }}>Colour</th>
                             <th style={{ padding: '0.75rem 1rem' }}>Price</th>
-                            <th style={{ padding: '0.75rem 1rem' }}>Customers Saved</th>
-                            <th style={{ padding: '0.75rem 1rem' }}>Demand Share</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Total Views</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>View Share</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {(preferencesData?.most_liked_models || []).map((model, idx) => (
+                          {(preferencesData?.most_viewed_frames || []).map((model, idx) => (
                             <tr key={idx} style={{ borderBottom: '1px solid #f8fafc', transition: 'background 0.15s' }}>
                               <td style={{ padding: '0.85rem 1rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1022,6 +1188,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                                       src={model.front_image}
                                       alt={model.name}
                                       style={{ width: '44px', height: '30px', objectFit: 'contain', backgroundColor: '#f8fafc', borderRadius: '6px' }}
+                                      onError={(e) => { e.target.src = '/frames/kaggle/0_mt6960_0.png'; }}
                                     />
                                   )}
                                   <div>
@@ -1050,9 +1217,9 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                               </td>
                               <td style={{ padding: '0.85rem 1rem' }}>
                                 <span style={{
-                                  backgroundColor: '#f0fdfa',
-                                  color: '#0f766e',
-                                  border: '1px solid #ccfbf1',
+                                  backgroundColor: '#eff6ff',
+                                  color: '#1d4ed8',
+                                  border: '1px solid #bfdbfe',
                                   padding: '3px 10px',
                                   borderRadius: '999px',
                                   fontWeight: 800,
@@ -1061,16 +1228,128 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                                   alignItems: 'center',
                                   gap: '6px'
                                 }}>
-                                  <Glasses size={13} color="#0d9488" />
-                                  {model.likes} customers
+                                  <Eye size={13} color="#2563eb" />
+                                  {model.view_count || 0} views
                                 </span>
                               </td>
                               <td style={{ padding: '0.85rem 1rem' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                   <div style={{ width: '60px', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
-                                    <div style={{ width: `${model.percentage}%`, height: '100%', backgroundColor: '#0d9488' }} />
+                                    <div style={{ width: `${model.view_share || 0}%`, height: '100%', backgroundColor: '#2563eb' }} />
                                   </div>
-                                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#0f766e' }}>{model.percentage}%</span>
+                                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#1d4ed8' }}>{model.view_share || 0}%</span>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* TABLE 2: MOST SELECTED FRAMES (Requirement 7) */}
+                  <div style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e2e8f0',
+                    padding: '1.5rem',
+                    marginBottom: '2rem',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#059669', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Glasses size={20} />
+                          <span>Most Selected Frames</span>
+                        </h3>
+                        <p style={{ margin: '3px 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                          Frames explicitly selected by customers in their EyeReach Collection and booked for doorstep home visit trials.
+                        </p>
+                      </div>
+                      <span style={{
+                        backgroundColor: '#dcfce7',
+                        color: '#15803d',
+                        padding: '4px 10px',
+                        borderRadius: '999px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700
+                      }}>
+                        Exact Database Selections
+                      </span>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.88rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #f1f5f9', color: '#64748b', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            <th style={{ padding: '0.75rem 1rem' }}>Frame Model</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Shape</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Colour</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Price</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Total Selections</th>
+                            <th style={{ padding: '0.75rem 1rem' }}>Selection Share</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(preferencesData?.most_selected_frames || []).map((model, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid #f8fafc', transition: 'background 0.15s' }}>
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                  {model.front_image && (
+                                    <img
+                                      src={model.front_image}
+                                      alt={model.name}
+                                      style={{ width: '44px', height: '30px', objectFit: 'contain', backgroundColor: '#f8fafc', borderRadius: '6px' }}
+                                      onError={(e) => { e.target.src = '/frames/kaggle/0_mt6960_0.png'; }}
+                                    />
+                                  )}
+                                  <div>
+                                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{model.name}</div>
+                                    <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{model.brand}</div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <span style={{
+                                  backgroundColor: '#dcfce7',
+                                  color: '#15803d',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 700
+                                }}>
+                                  {model.shape}
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.85rem 1rem', color: '#475569', fontWeight: 600 }}>
+                                {model.color}
+                              </td>
+                              <td style={{ padding: '0.85rem 1rem', fontWeight: 800, color: '#0f172a' }}>
+                                ₹{model.price}
+                              </td>
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <span style={{
+                                  backgroundColor: '#dcfce7',
+                                  color: '#15803d',
+                                  border: '1px solid #bbf7d0',
+                                  padding: '3px 10px',
+                                  borderRadius: '999px',
+                                  fontWeight: 800,
+                                  fontSize: '0.82rem',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px'
+                                }}>
+                                  <Glasses size={13} color="#059669" />
+                                  {model.selection_count || 0} selections
+                                </span>
+                              </td>
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <div style={{ width: '60px', height: '6px', backgroundColor: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                                    <div style={{ width: `${model.selection_share || 0}%`, height: '100%', backgroundColor: '#059669' }} />
+                                  </div>
+                                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#059669' }}>{model.selection_share || 0}%</span>
                                 </div>
                               </td>
                             </tr>
@@ -1251,6 +1530,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                               <th style={{ padding: '0.75rem 1rem' }}>Appointment ID</th>
                               <th style={{ padding: '0.75rem 1rem' }}>Date & Time</th>
                               <th style={{ padding: '0.75rem 1rem' }}>Selected Frames for Doorstep Trial</th>
+                              <th style={{ padding: '0.75rem 1rem' }}>Assigned Optometrist / Doctor</th>
                               <th style={{ padding: '0.75rem 1rem' }}>Purpose</th>
                               <th style={{ padding: '0.75rem 1rem' }}>Status</th>
                             </tr>
@@ -1294,13 +1574,37 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                                     </span>
                                   )}
                                 </td>
+                                <td style={{ padding: '0.85rem 1rem' }}>
+                                  <select
+                                    value={appt.doctor_id || ''}
+                                    onChange={(e) => handleAssignDoctor(appt.id, e.target.value)}
+                                    style={{
+                                      padding: '0.4rem 0.6rem',
+                                      borderRadius: '6px',
+                                      border: '1px solid #cbd5e1',
+                                      fontSize: '0.80rem',
+                                      backgroundColor: appt.doctor_id ? '#f0fdf4' : '#ffffff',
+                                      color: appt.doctor_id ? '#166534' : '#475569',
+                                      fontWeight: 600,
+                                      outline: 'none',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    <option value="">Unassigned</option>
+                                    {doctors.map((d) => (
+                                      <option key={d.id} value={d.id}>
+                                        {d.name} ({d.qualification || 'Optometrist'})
+                                      </option>
+                                    ))}
+                                  </select>
+                                </td>
                                 <td style={{ padding: '0.85rem 1rem', color: '#475569', fontSize: '0.82rem' }}>
                                   {appt.purpose}
                                 </td>
                                 <td style={{ padding: '0.85rem 1rem' }}>
                                   <span style={{
-                                    backgroundColor: appt.status === 'Confirmed' ? '#dcfce7' : '#fef9c3',
-                                    color: appt.status === 'Confirmed' ? '#15803d' : '#854d0e',
+                                    backgroundColor: appt.status === 'Confirmed' ? '#dcfce7' : appt.status === 'Rejected' ? '#fee2e2' : '#fef9c3',
+                                    color: appt.status === 'Confirmed' ? '#15803d' : appt.status === 'Rejected' ? '#b91c1c' : '#854d0e',
                                     padding: '2px 8px',
                                     borderRadius: '999px',
                                     fontWeight: 700,
@@ -1434,7 +1738,7 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                               src={p.front_image}
                               alt={p.name}
                               style={{ width: '48px', height: '32px', objectFit: 'contain', background: '#f8fafc', borderRadius: '4px', border: '1px solid #e2e8f0' }}
-                              onError={(e) => { e.target.src = '/frames/frame_001.svg'; }}
+                              onError={(e) => { e.target.src = '/frames/kaggle/0_mt6960_0.png'; }}
                             />
                             <div>
                               <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
@@ -1460,20 +1764,47 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                               {p.stock_quantity > 0 ? `${p.stock_quantity} in stock` : 'Out of stock'}
                             </span>
                           </td>
-                          <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
+                          <td style={{ padding: '0.85rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            <button
+                              onClick={() => handleOpenEditModal(p)}
+                              style={{
+                                background: '#e0f2fe',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '0.4rem 0.65rem',
+                                color: '#0369a1',
+                                cursor: 'pointer',
+                                marginRight: '6px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700
+                              }}
+                              title="Edit Frame"
+                            >
+                              <Edit size={14} />
+                              <span>Edit</span>
+                            </button>
                             <button
                               onClick={() => handleDeleteProduct(p.id, p.name)}
                               style={{
                                 background: '#fee2e2',
                                 border: 'none',
                                 borderRadius: '6px',
-                                padding: '0.4rem',
+                                padding: '0.4rem 0.65rem',
                                 color: '#b91c1c',
-                                cursor: 'pointer'
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700
                               }}
                               title="Delete Frame"
                             >
-                              <Trash2 size={16} />
+                              <Trash2 size={14} />
+                              <span>Delete</span>
                             </button>
                           </td>
                         </tr>
@@ -1695,6 +2026,49 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
                     onChange={(e) => setSingleForm({ ...singleForm, description: e.target.value })}
                     style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                   ></textarea>
+                </div>
+
+                {/* Real Spectacle Photo Selection */}
+                <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '0.75rem' }}>
+                    <div>
+                      <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#0f172a' }}>Real Optical Spectacle Photos</div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748b' }}>Select from high-definition transparent real spectacle photos or paste an image URL</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setGalleryTarget('add'); setShowGalleryPicker(true); }}
+                      style={{
+                        padding: '0.45rem 0.9rem',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Glasses size={14} />
+                      <span>Choose from Real Frames Gallery</span>
+                    </button>
+                  </div>
+                  {singleForm.front_image && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <img
+                        src={singleForm.front_image}
+                        alt="Selected frame preview"
+                        style={{ width: '80px', height: '48px', objectFit: 'contain', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '4px' }}
+                        onError={(e) => { e.target.src = '/frames/kaggle/0_mt6960_0.png'; }}
+                      />
+                      <span style={{ fontSize: '0.78rem', color: '#475569', wordBreak: 'break-all' }}>
+                        Selected: <code>{singleForm.front_image}</code>
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Imagery Inputs */}
@@ -2194,61 +2568,136 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
             </div>
           )}
 
-          {/* TAB 8: MODULE 12 - ANALYTICS & PITCH */}
-          {activeTab === 'analytics' && (
-            <div style={{ maxWidth: '860px', background: '#ffffff', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          {/* TAB: LINKED DOCTORS & OPTOMETRISTS (Requirement 3) */}
+          {activeTab === 'doctors' && (
+            <div style={{ background: '#ffffff', padding: '1.75rem', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
-                    Optical Retail Analytics & Market Opportunity
+                  <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Stethoscope size={22} color="#0d7665" />
+                    Linked Optometrists & Doctors
                   </h2>
-                  <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                    Module 11 & 12 Market Research and Retail Performance metrics
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                    Manage certified eye-care professionals linked to your optical store for doorstep eye consultations and frame review.
                   </p>
                 </div>
                 <button
-                  onClick={() => setShowBusinessModal(true)}
+                  onClick={() => setShowAddDoctorModal(true)}
                   style={{
                     padding: '0.65rem 1.25rem',
                     background: '#0d7665',
                     color: '#ffffff',
                     border: 'none',
                     borderRadius: '8px',
-                    fontWeight: 800,
+                    fontWeight: 700,
                     fontSize: '0.85rem',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
                   }}
                 >
-                  Open Full TAM / SAM / SOM Presentation
+                  <PlusCircle size={16} />
+                  <span>Add Optometrist / Doctor</span>
                 </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+              {loadingDoctors ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>Loading linked optometrists...</div>
+              ) : doctors.length === 0 ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b', background: '#f8fafc', borderRadius: '10px' }}>
+                  No doctors or optometrists linked yet. Click "Add Optometrist / Doctor" above to link your first practitioner.
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.86rem' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569', fontWeight: 700 }}>
+                        <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Doctor Name</th>
+                        <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Specialization</th>
+                        <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Registration No.</th>
+                        <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Contact</th>
+                        <th style={{ padding: '0.85rem 1rem', textAlign: 'left' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {doctors.map((d) => (
+                        <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.85rem 1rem' }}>
+                            <div style={{ fontWeight: 800, color: '#0f172a' }}>{d.name}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#0d7665', fontWeight: 600 }}>{d.qualification || 'Optometrist'}</div>
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem', color: '#334155', fontWeight: 500 }}>
+                            {d.specialization}
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem' }}>
+                            <span style={{ fontFamily: 'monospace', fontSize: '0.80rem', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', color: '#0f172a' }}>
+                              {d.registration_number || 'REG-ACTIVE'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem' }}>
+                            <div style={{ color: '#0f172a', fontWeight: 600 }}>{d.email}</div>
+                            <div style={{ fontSize: '0.76rem', color: '#64748b' }}>{d.mobile}</div>
+                          </td>
+                          <td style={{ padding: '0.85rem 1rem' }}>
+                            <span style={{
+                              padding: '3px 10px',
+                              borderRadius: '999px',
+                              fontSize: '0.74rem',
+                              fontWeight: 800,
+                              backgroundColor: '#dcfce7',
+                              color: '#15803d'
+                            }}>
+                              Active Practitioner
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 8: STORE PERFORMANCE & RETAIL ANALYTICS (Requirement 2 - No TAM/SAM/SOM) */}
+          {activeTab === 'analytics' && (
+            <div style={{ maxWidth: '860px', background: '#ffffff', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
+                  Optical Store Performance & Retail Analytics
+                </h2>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                  Comprehensive overview of catalog performance, customer consultations, and home dispensing metrics.
+                </p>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
                 <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '10px', padding: '1.25rem' }}>
-                  <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>TAM (Global Eyewear)</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#14532d', margin: '4px 0' }}>$180.5 B</div>
-                  <div style={{ fontSize: '0.72rem', color: '#15803d' }}>Statista Global Report 2027</div>
+                  <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>Total Store Inventory</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#14532d', margin: '4px 0' }}>{stats?.total_products || 0} Models</div>
+                  <div style={{ fontSize: '0.72rem', color: '#15803d' }}>{stats?.total_frames || 0} physical frame units in stock</div>
                 </div>
 
                 <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: '10px', padding: '1.25rem' }}>
-                  <div style={{ fontSize: '0.78rem', color: '#1e40af', fontWeight: 700 }}>SAM (Indian Retail Stores)</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e3a8a', margin: '4px 0' }}>$1.85 B</div>
-                  <div style={{ fontSize: '0.72rem', color: '#1d4ed8' }}>45,000+ Optical Dispensaries</div>
+                  <div style={{ fontSize: '0.78rem', color: '#1e40af', fontWeight: 700 }}>Total Sales Revenue</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#1e3a8a', margin: '4px 0' }}>₹{(stats?.sales_overview?.total_revenue || 0).toLocaleString()}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#1d4ed8' }}>Fulfilled customer dispensing orders</div>
                 </div>
 
-                <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '1.25rem' }}>
-                  <div style={{ fontSize: '0.78rem', color: '#92400e', fontWeight: 700 }}>SOM (Year 1-3 Target)</div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#78350f', margin: '4px 0' }}>$42.5 M</div>
-                  <div style={{ fontSize: '0.72rem', color: '#b45309' }}>1,800 Independent Outlets</div>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1.25rem' }}>
+                  <div style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 700 }}>Active Home Appointments</div>
+                  <div style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: '4px 0' }}>{homeAppointments.length}</div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>Doorstep eye examination requests</div>
                 </div>
               </div>
 
               <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '0.85rem', color: '#475569', lineHeight: 1.6 }}>
-                <strong>Key Optical Retailing Findings:</strong>
+                <strong>Store Operational Insights:</strong>
                 <br />
-                • <strong>High Return Rates Reduced:</strong> E-commerce eyewear suffers a 32% return rate due to size mismatch. EyeReach's biometric IPD and bridge verification lowers returns to under 7%.
+                • <strong>Biometric Try-On Accuracy:</strong> EyeReach calibrated interpupillary distance (IPD) verification provides accurate frame fit prior to doorstep delivery, minimizing product returns.
                 <br />
-                • <strong>In-Store Conversion Lift:</strong> Independent optical retailers utilizing digital try-on kiosks report a 24% increase in premium frame sales per customer visit.
+                • <strong>Doorstep Home Dispensing:</strong> Enabling customers to select up to 10 optical frames for home trial significantly improves prescription eyewear adoption and customer satisfaction.
               </div>
             </div>
           )}
@@ -2340,59 +2789,178 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
             </div>
           )}
 
-          {/* TAB 10: SETTINGS & B2B SAAS */}
+          {/* TAB 10: OWNER SETTINGS & PASSWORD (Requirement 8) */}
           {activeTab === 'settings' && (
-            <div style={{ maxWidth: '680px', background: '#ffffff', padding: '2rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-              <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
-                Store Settings & B2B SaaS Subscriptions
-              </h2>
-              <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.85rem' }}>
-                Module 11 B2B Optical Store platform configuration and AI engine integrations.
-              </p>
+            <div style={{ maxWidth: '680px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Store & Owner Profile Card */}
+              <div style={{ background: '#ffffff', padding: '1.75rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                  Owner Profile Settings
+                </h2>
+                <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.84rem' }}>
+                  Update your personal profile, optical dispensary details, and contact information.
+                </p>
 
-              {/* Subscription Status Card */}
-              <div style={{
-                background: '#f8fafc',
-                border: '1px solid #cbd5e1',
-                borderRadius: '10px',
-                padding: '1.25rem',
-                marginBottom: '1.5rem'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <strong style={{ fontSize: '1rem', color: '#0f172a' }}>Current Subscription: Pro Store</strong>
-                  <span style={{ padding: '3px 10px', borderRadius: '12px', background: '#dcfce7', color: '#15803d', fontSize: '0.75rem', fontWeight: 800 }}>
-                    ACTIVE
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.5 }}>
-                  • Unlimited spectacle frame inventory
-                  <br />
-                  • AI Description Generation (Unlimited)
-                  <br />
-                  • AI Parametric Eyewear CAD generator
-                  <br />
-                  • Real-time 3-View Virtual Try-On integration
-                </div>
+                {profileMsg && (
+                  <div style={{
+                    padding: '0.75rem',
+                    borderRadius: '6px',
+                    marginBottom: '1rem',
+                    fontSize: '0.85rem',
+                    background: profileMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
+                    color: profileMsg.type === 'success' ? '#15803d' : '#b91c1c'
+                  }}>
+                    {profileMsg.text}
+                  </div>
+                )}
+
+                <form onSubmit={handleUpdateProfile}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Optical Shop Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={profileForm.shop_name}
+                        onChange={(e) => setProfileForm({ ...profileForm, shop_name: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Owner Full Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={profileForm.owner_name}
+                        onChange={(e) => setProfileForm({ ...profileForm, owner_name: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Mobile Contact</label>
+                    <input
+                      type="tel"
+                      required
+                      value={profileForm.mobile_number}
+                      onChange={(e) => setProfileForm({ ...profileForm, mobile_number: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Store Address</label>
+                    <textarea
+                      rows="2"
+                      required
+                      value={profileForm.shop_address}
+                      onChange={(e) => setProfileForm({ ...profileForm, shop_address: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    ></textarea>
+                  </div>
+
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '0.65rem 1.25rem',
+                      background: '#0d7665',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Save Profile Changes
+                  </button>
+                </form>
               </div>
 
-              {/* External AI API Key Status (Per user instructions) */}
-              <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', padding: '1.25rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
-                  External AI API Keys & Configuration
-                </h4>
-                <div style={{ fontSize: '0.80rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1rem' }}>
-                  EyeReach contains a <strong>built-in Parametric Optical CAD Engine</strong> that operates completely offline without external API keys. To upgrade to cloud diffusion models (e.g., DALL-E 3 or Google Gemini Multimodal), add the keys to your <code>.env</code> file:
-                </div>
+              {/* Change Password Card (Requirement 8) */}
+              <div style={{ background: '#ffffff', padding: '1.75rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  Change Owner Account Password
+                </h3>
+                <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.84rem' }}>
+                  Ensure your optical store owner portal remains secure by setting a strong password.
+                </p>
 
-                <div style={{ background: '#0f172a', color: '#38bdf8', padding: '0.85rem', borderRadius: '6px', fontSize: '0.80rem', fontFamily: 'monospace', marginBottom: '0.75rem' }}>
-                  GEMINI_API_KEY=your_gemini_key_here
-                  <br />
-                  OPENAI_API_KEY=your_openai_key_here
-                </div>
+                {passwordMsg && (
+                  <div style={{
+                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    marginBottom: '1rem',
+                    fontSize: '0.85rem',
+                    backgroundColor: passwordMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
+                    color: passwordMsg.type === 'success' ? '#15803d' : '#b91c1c'
+                  }}>
+                    {passwordMsg.text}
+                  </div>
+                )}
 
-                <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 700 }}>
-                  ✓ Built-in Local Parametric Optical Engine: Active & Verified
-                </div>
+                <form onSubmit={handleChangePassword}>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                      Current Password *
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Enter current password"
+                      value={passwordForm.current_password}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
+                      style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                        New Password *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Enter new password"
+                        value={passwordForm.new_password}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                        Confirm New Password *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Confirm new password"
+                        value={passwordForm.confirm_password}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
+                        style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    style={{
+                      padding: '0.65rem 1.5rem',
+                      background: '#0d7665',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: passwordLoading ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {passwordLoading ? 'Updating Password...' : 'Update Password'}
+                  </button>
+                </form>
               </div>
             </div>
           )}
@@ -2400,11 +2968,570 @@ export default function ShopDashboard({ shopUser, onLogout, onSwitchToCustomer }
         </div>
       </main>
 
-      {/* TAM / SAM / SOM Presentation Modal */}
-      <BusinessModelModal
-        isOpen={showBusinessModal}
-        onClose={() => setShowBusinessModal(false)}
-      />
+      {/* EDIT PRODUCT MODAL (Requirement 1) */}
+      {editModalOpen && editingProduct && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '640px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            border: '1px solid #e2e8f0',
+            padding: '1.75rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit size={20} color="#0d7665" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  Edit Frame #{editingProduct.product_id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setEditModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {editSubmitMsg && (
+              <div style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.85rem',
+                backgroundColor: editSubmitMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
+                color: editSubmitMsg.type === 'success' ? '#15803d' : '#b91c1c'
+              }}>
+                {editSubmitMsg.text}
+              </div>
+            )}
+
+            <form onSubmit={handleEditProductSubmit}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Brand</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.brand}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, brand: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Frame Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.name}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Shape</label>
+                  <select
+                    value={editingProduct.shape}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, shape: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  >
+                    <option value="Round">Round</option>
+                    <option value="Rectangle">Rectangle</option>
+                    <option value="Square">Square</option>
+                    <option value="Aviator">Aviator</option>
+                    <option value="Cat-Eye">Cat-Eye</option>
+                    <option value="Geometric">Geometric</option>
+                    <option value="Oval">Oval</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Material</label>
+                  <select
+                    value={editingProduct.material}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, material: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  >
+                    <option value="Acetate">Acetate</option>
+                    <option value="Titanium">Titanium</option>
+                    <option value="Metal">Metal</option>
+                    <option value="TR90">TR90 Polymer</option>
+                    <option value="Wood">Wood</option>
+                    <option value="Mixed">Mixed</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Colour</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingProduct.color}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, color: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Price (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={editingProduct.price}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, price: parseFloat(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Stock Qty</label>
+                  <input
+                    type="number"
+                    required
+                    value={editingProduct.stock_quantity}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, stock_quantity: parseInt(e.target.value) || 0 })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Frame Type</label>
+                  <select
+                    value={editingProduct.frame_type || 'Full Rim'}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, frame_type: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  >
+                    <option value="Full Rim">Full Rim</option>
+                    <option value="Semi-Rimless">Semi-Rimless</option>
+                    <option value="Rimless">Rimless</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Photo & Gallery selection */}
+              <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '0.80rem', fontWeight: 700, color: '#0f172a' }}>Real Spectacle Photo</label>
+                  <button
+                    type="button"
+                    onClick={() => { setGalleryTarget('edit'); setShowGalleryPicker(true); }}
+                    style={{
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '4px 8px',
+                      borderRadius: '6px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Change from Gallery
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <img
+                    src={editingProduct.front_image}
+                    alt={editingProduct.name}
+                    style={{ width: '64px', height: '40px', objectFit: 'contain', backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '2px' }}
+                    onError={(e) => { e.target.src = '/frames/kaggle/0_mt6960_0.png'; }}
+                  />
+                  <input
+                    type="text"
+                    value={editingProduct.front_image}
+                    onChange={(e) => setEditingProduct({ ...editingProduct, front_image: e.target.value })}
+                    style={{ flex: 1, padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditModalOpen(false)}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    color: '#475569',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '0.65rem 1.5rem',
+                    background: '#0d7665',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* REAL FRAMES GALLERY MODAL (Requirement 1 - Real optical spectacle photos) */}
+      {showGalleryPicker && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '820px',
+            maxHeight: '85vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.25)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              padding: '1.25rem 1.5rem',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Glasses size={20} color="#0d7665" />
+                  Real Optical Spectacle Photos Gallery
+                </h3>
+                <p style={{ margin: '2px 0 0', fontSize: '0.80rem', color: '#64748b' }}>
+                  Click on any real optical spectacle frame to set it for your product.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowGalleryPicker(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              overflowY: 'auto',
+              flex: 1,
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+              gap: '12px',
+              backgroundColor: '#ffffff'
+            }}>
+              {realGallery.length === 0 ? (
+                <div style={{ gridColumn: '1 / -1', padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                  Loading real spectacle gallery...
+                </div>
+              ) : (
+                realGallery.map((imgUrl, i) => (
+                  <div
+                    key={i}
+                    onClick={() => {
+                      if (galleryTarget === 'add') {
+                        setSingleForm((prev) => ({
+                          ...prev,
+                          front_image: imgUrl,
+                          side_image: imgUrl,
+                          angled_image: imgUrl
+                        }));
+                      } else if (galleryTarget === 'edit') {
+                        setEditingProduct((prev) => ({
+                          ...prev,
+                          front_image: imgUrl
+                        }));
+                      }
+                      setShowGalleryPicker(false);
+                    }}
+                    style={{
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '8px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      backgroundColor: '#f8fafc',
+                      transition: 'all 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = '#0d7665';
+                      e.currentTarget.style.boxShadow = '0 4px 6px rgba(13, 118, 101, 0.15)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    <img
+                      src={imgUrl}
+                      alt={`Optical frame ${i}`}
+                      style={{ width: '100%', height: '60px', objectFit: 'contain' }}
+                      onError={(e) => { e.target.src = '/frames/kaggle/0_mt6960_0.png'; }}
+                    />
+                    <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {imgUrl.split('/').pop()}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'right' }}>
+              <button
+                onClick={() => setShowGalleryPicker(false)}
+                style={{
+                  padding: '0.5rem 1.25rem',
+                  background: '#64748b',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer'
+                }}
+              >
+                Close Gallery
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD DOCTOR MODAL (Requirement 3) */}
+      {showAddDoctorModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '560px',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            border: '1px solid #e2e8f0',
+            padding: '1.75rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Stethoscope size={22} color="#0d7665" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                  Link New Optometrist / Doctor
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowAddDoctorModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {doctorSubmitMsg && (
+              <div style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.85rem',
+                backgroundColor: doctorSubmitMsg.type === 'success' ? '#dcfce7' : '#fee2e2',
+                color: doctorSubmitMsg.type === 'success' ? '#15803d' : '#b91c1c'
+              }}>
+                {doctorSubmitMsg.text}
+              </div>
+            )}
+
+            <form onSubmit={handleAddDoctorSubmit}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                  Doctor / Practitioner Full Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Rajesh Sharma"
+                  value={newDoctorForm.name}
+                  onChange={(e) => setNewDoctorForm({ ...newDoctorForm, name: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                    Email (Login ID) *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="doctor@eyereach.com"
+                    value={newDoctorForm.email}
+                    onChange={(e) => setNewDoctorForm({ ...newDoctorForm, email: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                    Mobile Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="+91 98765 43210"
+                    value={newDoctorForm.mobile}
+                    onChange={(e) => setNewDoctorForm({ ...newDoctorForm, mobile: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                    Qualification *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. B.Optom, M.Optom, FAAO"
+                    value={newDoctorForm.qualification}
+                    onChange={(e) => setNewDoctorForm({ ...newDoctorForm, qualification: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                    Registration No.
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. KA-OPT-2022-9102"
+                    value={newDoctorForm.registration_number}
+                    onChange={(e) => setNewDoctorForm({ ...newDoctorForm, registration_number: e.target.value })}
+                    style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                  Specialization
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Clinical Optometry & Ophthalmic Dispenser"
+                  value={newDoctorForm.specialization}
+                  onChange={(e) => setNewDoctorForm({ ...newDoctorForm, specialization: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>
+                  Portal Password *
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Set login password for doctor portal"
+                  value={newDoctorForm.password}
+                  onChange={(e) => setNewDoctorForm({ ...newDoctorForm, password: e.target.value })}
+                  style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddDoctorModal(false)}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    background: '#f1f5f9',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    color: '#475569',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '0.65rem 1.5rem',
+                    background: '#0d7665',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Link Practitioner
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );

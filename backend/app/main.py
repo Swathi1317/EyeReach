@@ -56,7 +56,8 @@ from .routers import (
     shop_inventory,
     shop_ai,
     customer_portal,
-    appointments
+    appointments,
+    doctor
 )
 
 app.include_router(phase1.router)
@@ -68,11 +69,22 @@ app.include_router(shop_inventory.router)
 app.include_router(shop_ai.router)
 app.include_router(customer_portal.router)
 app.include_router(appointments.router)
+app.include_router(doctor.router)
+
+@app.get("/health", summary="Health Check")
+async def health_check():
+    """
+    Basic health check API to verify service is running.
+    """
+    return {
+        "status": "ok",
+        "service": settings.PROJECT_NAME
+    }
 
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 
-# Mount frontend production build and SPA routes
+# Mount frontend production build and SPA routes if dist exists
 FRONTEND_DIST = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "dist"))
 
 # Mount assets (compiled JS and CSS)
@@ -94,21 +106,15 @@ if not os.path.isdir(mediapipe_dir):
 if os.path.isdir(mediapipe_dir):
     app.mount("/mediapipe", StaticFiles(directory=mediapipe_dir), name="mediapipe")
 
-@app.get("/health", summary="Health Check")
-async def health_check():
-    """
-    Basic health check API to verify service is running.
-    """
-    return {
-        "status": "ok",
-        "service": settings.PROJECT_NAME
-    }
-
 # SPA Fallback & Client-side Routing Catch-all
 @app.api_route("/{full_path:path}", methods=["GET", "HEAD"], include_in_schema=False)
 async def serve_spa(full_path: str):
-    # Don't intercept API routes or uploads
-    if full_path.startswith("api") or full_path.startswith("uploads") or full_path.startswith("docs"):
+    if (
+        full_path.startswith("api")
+        or full_path.startswith("uploads")
+        or full_path.startswith("docs")
+        or full_path.startswith("openapi.json")
+    ):
         raise HTTPException(status_code=404, detail="Not Found")
     file_path = os.path.join(FRONTEND_DIST, full_path)
     if os.path.isfile(file_path):
@@ -117,3 +123,4 @@ async def serve_spa(full_path: str):
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return {"message": "EyeReach API is running. Build frontend to view UI."}
+

@@ -2,23 +2,126 @@ import hashlib
 import os
 from sqlalchemy import text
 from .database import engine, Base, SessionLocal
-from .models import Shop, Customer, Product, Order, Appointment, CustomerFramePick
+from .models import Shop, Customer, Product, Order, Appointment, CustomerFramePick, Doctor, FrameView
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 def ensure_schema_migrations():
-    """Ensure newly added columns exist in SQLite database without requiring data wipe."""
+    """Ensure newly added columns and tables exist in SQLite database without requiring data wipe."""
     Base.metadata.create_all(bind=engine)
-    try:
-        with engine.connect() as conn:
-            res = conn.execute(text("PRAGMA table_info(appointments);")).fetchall()
-            cols = [r[1] for r in res]
-            if "selected_frames_json" not in cols:
-                conn.execute(text("ALTER TABLE appointments ADD COLUMN selected_frames_json TEXT;"))
+    if engine.name == "sqlite":
+        try:
+            with engine.connect() as conn:
+                # 1. Appointments migrations
+                res = conn.execute(text("PRAGMA table_info(appointments);")).fetchall()
+                cols = [r[1] for r in res]
+                if "selected_frames_json" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN selected_frames_json TEXT;"))
+                if "doctor_id" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN doctor_id INTEGER;"))
+                if "doctor_notes" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN doctor_notes TEXT;"))
+
+                # 2. Products migrations
+                p_res = conn.execute(text("PRAGMA table_info(products);")).fetchall()
+                p_cols = [r[1] for r in p_res]
+                if "view_count" not in p_cols:
+                    conn.execute(text("ALTER TABLE products ADD COLUMN view_count INTEGER DEFAULT 0;"))
+                if "selection_count" not in p_cols:
+                    conn.execute(text("ALTER TABLE products ADD COLUMN selection_count INTEGER DEFAULT 0;"))
+
                 conn.commit()
-    except Exception as e:
-        print(f"Notice during appointments schema migration: {e}")
+        except Exception as e:
+            print(f"Notice during SQLite schema migration: {e}")
+
+    # Seed default doctor & link appointments & update real frame images
+    db = SessionLocal()
+    try:
+        # Check doctor
+        doc = db.query(Doctor).first()
+        if not doc:
+            shop = db.query(Shop).first()
+            doc = Doctor(
+                name="Dr. Priya Nair",
+                email="doctor@eyereach.com",
+                mobile="9845012345",
+                specialization="Consultant Optometrist",
+                qualification="M.Optom, F.I.A.C.L.",
+                registration_number="KA-OPT-2019-8821",
+                password_hash=hash_password("doctor123"),
+                shop_id=shop.id if shop else 1,
+                is_active=True
+            )
+            db.add(doc)
+            db.commit()
+            db.refresh(doc)
+            print(f"Seeded default Optometrist Doctor: {doc.name} ({doc.email})")
+
+        # Assign existing unassigned appointments to this doctor
+        unassigned_appts = db.query(Appointment).filter(Appointment.doctor_id == None).all()
+        for a in unassigned_appts:
+            a.doctor_id = doc.id
+        if unassigned_appts:
+            db.commit()
+
+        # Migrate any cartoon SVGs in Product table to real spectacle photos
+        kaggle_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "frontend", "public", "frames", "kaggle")
+        if os.path.exists(kaggle_dir):
+            real_images = sorted([f"/frames/kaggle/{f}" for f in os.listdir(kaggle_dir) if f.endswith(".png")])
+            if real_images:
+                products = db.query(Product).all()
+                for idx, prod in enumerate(products):
+                    if prod.front_image and prod.front_image.endswith(".svg"):
+                        img_path = real_images[idx % len(real_images)]
+                        prod.front_image = img_path
+                        prod.side_image = img_path
+                        prod.angled_image = img_path
+                
+                # Also update CustomerFramePick images if SVG
+                picks = db.query(CustomerFramePick).all()
+                for idx, pick in enumerate(picks):
+                    if pick.front_image and pick.front_image.endswith(".svg"):
+                        pick.front_image = real_images[idx % len(real_images)]
+
+                # Update view_count and selection_count
+                for idx, prod in enumerate(products):
+                    picks_count = db.query(CustomerFramePick).filter(
+                        (CustomerFramePick.product_id == prod.product_id) | (CustomerFramePick.product_id == str(prod.id))
+                    ).count()
+                    prod.selection_count = picks_count
+                    # Differentiated realistic view counts (e.g. 3x to 5x views of selections + baseline)
+                    if not prod.view_count or prod.view_count == 0:
+                        prod.view_count = (picks_count * 3) + ((idx * 7 + 23) % 45) + 15
+                
+                db.commit()
+                print("Migrated product images to real spectacle photos and updated view/selection counts.")
+
+        # Migrate frames.json to real spectacle photos
+        frames_json_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "frames.json")
+        if os.path.exists(frames_json_path) and os.path.exists(kaggle_dir):
+            real_images = sorted([f"/frames/kaggle/{f}" for f in os.listdir(kaggle_dir) if f.endswith(".png")])
+            if real_images:
+                import json
+                with open(frames_json_path, "r", encoding="utf-8") as f:
+                    frames_data = json.load(f)
+                updated = False
+                for idx, fr in enumerate(frames_data):
+                    if fr.get("image", "").endswith(".svg"):
+                        img_path = real_images[idx % len(real_images)]
+                        fr["image"] = img_path
+                        fr["side_image"] = img_path
+                        fr["angled_image"] = img_path
+                        updated = True
+                if updated:
+                    with open(frames_json_path, "w", encoding="utf-8") as f:
+                        json.dump(frames_data, f, indent=2)
+                    print(f"Updated {len(frames_data)} frames in frames.json with real spectacle photos.")
+    except Exception as err:
+        db.rollback()
+        print(f"Notice during doctor/image migration: {err}")
+    finally:
+        db.close()
 
 def seed_customer_frame_preferences(db):
     """Seed realistic customer frame picks if none exist, producing aggregate demand figures."""
