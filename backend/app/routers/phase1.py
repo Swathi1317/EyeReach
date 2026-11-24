@@ -135,19 +135,47 @@ async def analyze_phase1(
         frames_evaluated=len(features_list)
     )
 
-    # 5. Extract pixel measurements from the best-aligned valid frame
+    # 5. Extract normalized and pixel measurements from the best-aligned valid frame
     best_frame = max(valid_frames, key=lambda f: f["pose_weight"])
     landmarks = best_frame["face_data"].get("landmarks")
-    measurements = {}
+    
+    lw = stable_features.get("face_length_to_cheekbone_width", 1.20)
+    jw = stable_features.get("jaw_width_to_cheekbone_width", 0.94)
+    fw = stable_features.get("forehead_width_to_cheekbone_width", 0.86)
+    jaw_ang = stable_features.get("avg_jaw_angle", 142.0)
+    chin_ang = stable_features.get("chin_angle", 88.0)
+    taper = stable_features.get("cheekbone_to_jaw_taper", 0.055)
+
+    if jaw_ang <= 139.5 and jw >= 0.94:
+        jawline_desc = "Strong & Angular (Sharp Gonial Angles)"
+    elif chin_ang <= 86.5 or taper >= 0.058:
+        jawline_desc = "Pointed & Tapered (V-Line Chin)"
+    elif jaw_ang >= 142.0 and jw <= 0.93:
+        jawline_desc = "Soft & Rounded (Curved Jawline)"
+    elif lw >= 1.25 and jw >= 0.91:
+        jawline_desc = "Straight & Uniform (Elongated Profile)"
+    else:
+        jawline_desc = "Gently Tapered (Balanced Harmony)"
+
+    measurements = {
+        "face_length_to_width_ratio": round(float(lw), 2),
+        "forehead_width_relative": round(float(fw), 2),
+        "cheekbone_width_relative": 1.0,
+        "jaw_width_relative": round(float(jw), 2),
+        "jawline_description": jawline_desc,
+        "avg_jaw_angle": round(float(jaw_ang), 1),
+        "chin_angle": round(float(chin_ang), 1)
+    }
+
     if landmarks is not None and len(landmarks) >= 454:
         def dist_px(p1, p2):
             return float(np.linalg.norm(landmarks[p1] - landmarks[p2]))
-        measurements = {
+        measurements.update({
             "cheekbone_width_px": round(dist_px(234, 454), 1),
             "jaw_width_px": round(dist_px(132, 361), 1),
             "forehead_width_px": round(dist_px(54, 284), 1),
             "face_length_px": round(dist_px(10, 152), 1)
-        }
+        })
 
     return {
         "face_shape": result["face_shape"],

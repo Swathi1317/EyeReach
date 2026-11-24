@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" width="100%" height="100%">
+  <defs>
+    <filter id="shadow" x="-8%" y="-8%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="rgba(15, 23, 42, 0.25)" />
+    </filter>
+    <linearGradient id="lensShine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.45)"/>
+      <stop offset="35%" stop-color="rgba(255,255,255,0.05)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.0)"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="100%" height="100%" fill="#ffffff" rx="12"/>
+
+  <!-- Temples (Side Arms extending rearward) -->
+  <path d="M 65 95 L 20 85 Q 10 82 5 75" fill="none" stroke="#991b1b" stroke-width="4.5" stroke-linecap="round" opacity="0.85"/>
+  <path d="M 335 95 L 380 85 Q 390 82 395 75" fill="none" stroke="#991b1b" stroke-width="4.5" stroke-linecap="round" opacity="0.85"/>
+
+  <!-- Optical Chassis Body -->
+  
+            <rect x="65" y="80" width="115" height="65" rx="8" fill="none" stroke="#991b1b" stroke-width="8" filter="url(#shadow)"/>
+            <rect x="220" y="80" width="115" height="65" rx="8" fill="none" stroke="#991b1b" stroke-width="8" filter="url(#shadow)"/>
+            <rect x="69" y="84" width="107" height="57" rx="6" fill="rgba(254, 226, 226, 0.22)"/>
+            <rect x="224" y="84" width="107" height="57" rx="6" fill="rgba(254, 226, 226, 0.22)"/>
+            <path d="M 180 105 Q 200 96 220 105" fill="none" stroke="#f87171" stroke-width="5" stroke-linecap="round"/>
+        
+
+  <!-- Lenses Anti-Reflective Glare / Ray-Ban style studio highlight -->
+  <path d="M 85 80 L 145 135" stroke="url(#lensShine)" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+  <path d="M 245 80 L 305 135" stroke="url(#lensShine)" stroke-width="6" stroke-linecap="round" opacity="0.6"/>
+
+  <!-- Hinge Pin Details -->
+  <circle cx="64" cy="95" r="2.5" fill="#f87171"/>
+  <circle cx="336" cy="95" r="2.5" fill="#f87171"/>
+</svg>

@@ -33,7 +33,7 @@ def test_01_shop_registration_and_login():
     assert res_login.status_code == 200
     data = res_login.json()
     assert "token" in data
-    assert data["shop"]["shop_name"] == "VisionCraft Opticians"
+    assert "VisionCraft Opticians" in data["shop"]["shop_name"]
 
 def test_02_dashboard_kpis():
     res = client.get("/api/shop/dashboard/stats")

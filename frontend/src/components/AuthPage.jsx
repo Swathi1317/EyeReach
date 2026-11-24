@@ -496,7 +496,7 @@ export default function AuthPage({ onLogin }) {
         {/* ================= RIGHT SECTION: EASY-TO-USE LOGIN FORM ================= */}
         <div className="eyereach-form-panel">
           
-          {/* Portal Switcher (Customer vs Store Owner vs Doctor) */}
+          {/* Portal Switcher (Customer vs Shop Owner / Optometrist) */}
           <div className="eyereach-portal-toggle">
             <button
               type="button"
@@ -512,15 +512,7 @@ export default function AuthPage({ onLogin }) {
               onClick={() => { setRole('shop'); setAuthError(null); setAuthSuccess(null); }}
             >
               <Store size={18} />
-              <span>Store Owner</span>
-            </button>
-            <button
-              type="button"
-              className={`eyereach-portal-btn ${role === 'doctor' ? 'active-emerald' : ''}`}
-              onClick={() => { setRole('doctor'); setAuthError(null); setAuthSuccess(null); }}
-            >
-              <Stethoscope size={18} />
-              <span>Doctor</span>
+              <span>Shop Owner / Optometrist</span>
             </button>
           </div>
 
@@ -529,18 +521,14 @@ export default function AuthPage({ onLogin }) {
             <h2 className="eyereach-main-heading">
               {role === 'customer' 
                 ? 'Your Vision, Your Care, Your EyeReach.' 
-                : role === 'doctor'
-                  ? 'Doctor & Clinical Review Console'
-                  : 'Optical Store Management'}
+                : 'Shop Owner & Optometrist Portal'}
             </h2>
             <p className="eyereach-sub-description">
               {role === 'customer'
                 ? (customerMethod === 'mobile' 
                     ? 'Enter your details below for simple, instant access to home testing.' 
                     : 'Sign in with your registered email and password credentials.')
-                : role === 'doctor'
-                  ? 'Sign in to review patient biometrics, approve home visits, and prepare spectacle frames.'
-                  : 'Manage optical store inventory, customer frame prescriptions and appointments.'}
+                : 'Direct communication portal between customer and optical shop owner or optometrist for home visits, vision tests, and orders.'}
             </p>
           </div>
 
@@ -973,7 +961,7 @@ export default function AuthPage({ onLogin }) {
                 >
                   {loading ? 'Authenticating...' : (
                     <>
-                      <span>{isShopRegister ? 'Register Optical Shop' : 'Access Shop Management'}</span>
+                      <span>{isShopRegister ? 'Register Optical Shop' : 'Sign In as Shop Owner / Optometrist'}</span>
                       <ArrowRight size={22} />
                     </>
                   )}

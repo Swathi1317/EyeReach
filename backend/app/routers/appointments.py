@@ -285,6 +285,8 @@ def create_appointment(data: AppointmentCreate, db: Session = Depends(get_db)):
 @router.get("", response_model=List[AppointmentResponse])
 def list_appointments(
     appointment_type: Optional[str] = None,
+    mobile_number: Optional[str] = None,
+    email: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
@@ -293,6 +295,12 @@ def list_appointments(
     query = db.query(Appointment)
     if appointment_type:
         query = query.filter(Appointment.appointment_type == normalize_type(appointment_type))
+    if mobile_number:
+        clean_m = re.sub(r"\D", "", mobile_number)
+        if len(clean_m) >= 10:
+            query = query.filter(Appointment.mobile_number.ilike(f"%{clean_m[-10:]}%"))
+    if email:
+        query = query.filter(Appointment.email.ilike(email.strip()))
     
     records = query.order_by(Appointment.id.desc()).all()
     

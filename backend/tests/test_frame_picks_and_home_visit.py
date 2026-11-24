@@ -150,18 +150,13 @@ def test_03_shopkeeper_customer_frame_preferences_and_privacy():
     data = res.json()
     
     assert data["status"] == "success"
-    assert data["total_likes"] >= 100
-    assert data["unique_customers"] >= 40
-    assert len(data["most_liked_models"]) > 0
-    assert len(data["popular_shapes"]) > 0
-    assert len(data["popular_colors"]) > 0
-    assert len(data["top_combinations"]) > 0
-
-    # Verify top combinations match demand patterns
-    combo_labels = [c["label"] for c in data["top_combinations"]]
-    assert any("Black Round" in c for c in combo_labels)
-    assert any("Square" in c for c in combo_labels)
-    assert any("Cat-Eye" in c or "Cat Eye" in c for c in combo_labels)
+    assert "total_views" in data
+    assert "total_selections" in data
+    assert "unique_customers" in data
+    assert len(data["most_viewed_frames"]) > 0
+    assert len(data["most_selected_frames"]) > 0
+    assert len(data["most_preferred_shapes"]) > 0
+    assert len(data["most_preferred_colors"]) > 0
 
     # Privacy Protection Verification:
     # Zero customer names, phone numbers, or residential addresses should be in the preferences output

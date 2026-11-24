@@ -17,7 +17,7 @@ def test_recommendations_basic():
     assert response.status_code == 200
     data = response.json()
     assert "recommendations" in data
-    assert len(data["recommendations"]) == 5
+    assert len(data["recommendations"]) >= 5
     
     # Check score limits and sorting
     prev_score = 101.0

@@ -24,7 +24,7 @@ from backend.ml.face_utils import shared_face_analyzer, get_capture_guidance_mes
 
 client = TestClient(app)
 
-TARGET_CLASSES = ["Heart", "Oblong", "Oval", "Round", "Square"]
+TARGET_CLASSES = ["Diamond", "Heart", "Oblong", "Oval", "Round", "Square"]
 
 
 def create_blank_image(width=640, height=480, color=(128, 128, 128)):
@@ -68,8 +68,8 @@ def test_phase1_valid_face_prediction():
     data = response.json()
     assert data["face_shape"] in TARGET_CLASSES
     assert data["confidence"] > 0.0
-    assert len(data["top_predictions"]) == 5
-    # Confirm all 5 classes are present
+    assert len(data["top_predictions"]) == 6
+    # Confirm all 6 classes are present
     classes_returned = [p["shape"] for p in data["top_predictions"]]
     assert set(classes_returned) == set(TARGET_CLASSES)
     assert data["guidance_message"] == "Face detected. You can continue."
@@ -135,4 +135,4 @@ def test_get_capture_guidance_message_helper():
     assert get_capture_guidance_message({"status": "invalid", "reasons": ["not_facing_camera"]}) == "Please face the camera directly."
     assert get_capture_guidance_message({"status": "invalid", "reasons": ["head_not_level"]}) == "Keep your head level and try again."
     assert get_capture_guidance_message({"status": "invalid", "reasons": ["face_not_centered"]}) == "Keep your face centered."
-    assert get_capture_guidance_message({"status": "invalid", "reasons": ["face_too_small"]}) == "Keep the face sufficiently close and clearly visible."
+    assert get_capture_guidance_message({"status": "invalid", "reasons": ["face_too_small"]}) == "You are too far from the camera. Please come closer."

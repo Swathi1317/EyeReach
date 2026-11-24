@@ -141,6 +141,40 @@ class SharedFaceAnalyzer:
                 if "excessive_head_pose" not in result["quality"]["reasons"]:
                     result["quality"]["reasons"].append("excessive_head_pose")
             
+        # 5. Eye Detection and Openness Check (Avoid blinks or closed eyes during capture)
+        # Check both eye contours and calculate Eye Aspect Ratio (EAR)
+        # Right eye: 33 (outer), 133 (inner), 159 (upper), 145 (lower)
+        # Left eye: 263 (outer), 362 (inner), 386 (upper), 374 (lower)
+        if len(landmarks) >= 468:
+            r_eye_w = math.hypot(landmarks[33].x - landmarks[133].x, landmarks[33].y - landmarks[133].y)
+            r_eye_h = math.hypot(landmarks[159].x - landmarks[145].x, landmarks[159].y - landmarks[145].y)
+            r_ear = r_eye_h / max(0.001, r_eye_w)
+
+            l_eye_w = math.hypot(landmarks[263].x - landmarks[362].x, landmarks[263].y - landmarks[362].y)
+            l_eye_h = math.hypot(landmarks[386].x - landmarks[374].x, landmarks[386].y - landmarks[374].y)
+            l_ear = l_eye_h / max(0.001, l_eye_w)
+
+            # Strict eye detection: both eyes must be open and not blinking
+            if r_ear < 0.11 or l_ear < 0.11:
+                result["quality"]["status"] = "invalid"
+                result["quality"]["reasons"].append("eyes_closed_or_blinking")
+
+        # 6. Both Ears Detection (when visible in frame)
+        # Right ear tragus (234), Left ear tragus (454)
+        r_ear_vis = bool(landmarks[234].x >= 0.01 and landmarks[234].x < landmarks[33].x and abs(landmarks[234].y - right_eye.y) < 0.22)
+        l_ear_vis = bool(landmarks[454].x <= 0.99 and landmarks[454].x > landmarks[263].x and abs(landmarks[454].y - left_eye.y) < 0.22)
+        result["ears_detected"] = {
+            "right_ear": r_ear_vis,
+            "left_ear": l_ear_vis,
+            "both_ears": bool(r_ear_vis and l_ear_vis)
+        }
+
+        # 7. Facial Landmark Integrity & Spatial Positioning Check
+        # Forehead above nose, nose above chin, horizontal eye order
+        if not (forehead.y < nose.y - 0.04 and nose.y < chin.y - 0.04 and right_eye.x < left_eye.x):
+            result["quality"]["status"] = "invalid"
+            result["quality"]["reasons"].append("incomplete_or_misplaced_landmarks")
+
         if len(result["quality"]["reasons"]) == 0:
             result["quality"]["status"] = "valid"
             
@@ -165,6 +199,10 @@ def get_capture_guidance_message(quality_dict: Dict) -> str:
         return "Face not detected. Please position your face in the frame."
     if "not_facing_camera" in reasons:
         return "Please face the camera directly."
+    if "eyes_closed_or_blinking" in reasons:
+        return "Please open both eyes clearly."
+    if "incomplete_or_misplaced_landmarks" in reasons:
+        return "Facial landmarks not properly positioned. Please align your face directly."
     if "head_not_level" in reasons:
         return "Keep your head level and try again."
     if "excessive_head_pose" in reasons:
@@ -172,7 +210,7 @@ def get_capture_guidance_message(quality_dict: Dict) -> str:
     if "face_not_centered" in reasons:
         return "Keep your face centered."
     if "face_too_small" in reasons:
-        return "Keep the face sufficiently close and clearly visible."
+        return "You are too far from the camera. Please come closer."
     if "multiple_faces" in reasons:
         return "Multiple faces detected. Please ensure only one person is in the frame."
     if "too_dark" in reasons:

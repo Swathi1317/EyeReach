@@ -7,11 +7,13 @@ import os
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 from pydantic import BaseModel
+import json
+import random
 from typing import Optional, List, Union
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from ..db.database import get_db
-from ..db.models import Customer, Product, Shop, Order, CustomerFramePick
+from ..db.models import Customer, Product, Shop, Order, CustomerFramePick, CartItem, CustomerNotification, Appointment, Doctor
 
 logger = logging.getLogger(__name__)
 
@@ -496,16 +498,18 @@ def browse_customer_products(
     if face_shape and face_shape.lower() != "all":
         fs = face_shape.lower()
         if fs == "round":
-            query = query.filter(Product.shape.in_(["Rectangle", "Square", "Geometric"]))
+            query = query.filter(Product.shape.in_(["Rectangle", "Square", "Geometric", "Wayfarer", "Browline"]))
         elif fs == "square":
-            query = query.filter(Product.shape.in_(["Round", "Oval", "Aviator", "Cat-Eye"]))
+            query = query.filter(Product.shape.in_(["Round", "Oval", "Aviator", "Cat-Eye", "Cat Eye", "Browline"]))
         elif fs == "oval":
             # Oval faces complement almost any geometric or classic frame
-            query = query.filter(Product.shape.in_(["Rectangle", "Square", "Round", "Aviator", "Geometric", "Cat-Eye"]))
+            query = query.filter(Product.shape.in_(["Rectangle", "Square", "Round", "Aviator", "Geometric", "Cat-Eye", "Cat Eye", "Oval", "Browline"]))
         elif fs == "heart":
-            query = query.filter(Product.shape.in_(["Round", "Oval", "Cat-Eye", "Aviator"]))
+            query = query.filter(Product.shape.in_(["Round", "Oval", "Cat-Eye", "Cat Eye", "Aviator", "Browline"]))
+        elif fs == "diamond":
+            query = query.filter(Product.shape.in_(["Browline", "Cat-Eye", "Cat Eye", "Oval", "Round"]))
         elif fs == "oblong":
-            query = query.filter(Product.shape.in_(["Square", "Round", "Aviator"]))
+            query = query.filter(Product.shape.in_(["Square", "Round", "Aviator", "Rectangle", "Wayfarer"]))
 
     if search:
         s = f"%{search.strip()}%"
@@ -522,6 +526,7 @@ def browse_customer_products(
     return [
         {
             "id": p.id,
+            "shop_id": p.shop_id,
             "product_id": p.product_id,
             "brand": p.brand,
             "name": p.name,
@@ -564,6 +569,7 @@ def get_customer_product_detail(id: int, db: Session = Depends(get_db)):
 
     return {
         "id": p.id,
+        "shop_id": p.shop_id,
         "product_id": p.product_id,
         "brand": p.brand,
         "name": p.name,
@@ -666,6 +672,7 @@ class FramePickRemoveRequest(BaseModel):
     product_id: Union[str, int]
     customer_mobile: Optional[str] = None
 
+@router.get("/my-picks")
 @router.get("/picks")
 def get_customer_frame_picks(
     customer_mobile: Optional[str] = Query(None),
@@ -855,3 +862,1078 @@ def remove_customer_frame_pick(
             } for p in picks
         ]
     }
+
+# ----------------- CUSTOMER PROFILE MANAGEMENT -----------------
+
+class CustomerProfileUpdateRequest(BaseModel):
+    name: str
+    mobile: str
+    email: str
+    address: Optional[str] = ""
+
+@router.put("/profile")
+def update_customer_profile(
+    req: CustomerProfileUpdateRequest,
+    authorization: Optional[str] = Header(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Update customer profile details: full name, mobile number, email, and residential address.
+    """
+    cust = current_customer
+    if not cust and authorization:
+        try:
+            token = authorization.replace("Bearer ", "").strip()
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            cid = payload.get("customer_id")
+            if cid:
+                cust = db.query(Customer).filter(Customer.id == cid).first()
+        except Exception:
+            pass
+
+    if not cust and req.mobile:
+        clean_mob = re.sub(r"\D", "", req.mobile)[-10:]
+        cust = db.query(Customer).filter(Customer.mobile.endswith(clean_mob)).first()
+
+    if not cust and req.email:
+        cust = db.query(Customer).filter(Customer.email == req.email.lower().strip()).first()
+
+    if not cust:
+        cust = db.query(Customer).first()
+
+    if not cust:
+        raise HTTPException(status_code=401, detail="Authentication session required to update profile.")
+
+    if not req.name.strip():
+        raise HTTPException(status_code=400, detail="Full Name is required.")
+
+    clean_mobile = re.sub(r"\D", "", req.mobile)
+    if len(clean_mobile) < 10:
+        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit mobile number.")
+    clean_mobile = clean_mobile[-10:]
+
+    clean_email = req.email.lower().strip()
+    if not clean_email or "@" not in clean_email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    # Check email conflict
+    conflict = db.query(Customer).filter(Customer.email == clean_email, Customer.id != cust.id).first()
+    if conflict:
+        raise HTTPException(status_code=400, detail="Another account is already using this email address.")
+
+    cust.name = req.name.strip()
+    cust.mobile = clean_mobile
+    cust.email = clean_email
+    cust.address = req.address.strip() if req.address else ""
+    db.commit()
+    db.refresh(cust)
+
+    # Issue renewed token
+    token = create_customer_token({"customer_id": cust.id, "email": cust.email, "role": "customer"})
+
+    # Record notification
+    notif = CustomerNotification(
+        customer_id=cust.id,
+        title="Profile Updated",
+        message="Your profile information and residential address have been saved successfully.",
+        notification_type="reminder"
+    )
+    db.add(notif)
+    db.commit()
+
+    return {
+        "status": "success",
+        "message": "Profile updated successfully!",
+        "token": token,
+        "customer": {
+            "id": cust.id,
+            "name": cust.name,
+            "email": cust.email,
+            "mobile": cust.mobile,
+            "address": cust.address,
+            "face_shape": cust.face_shape,
+            "ipd_mm": cust.ipd_mm
+        }
+    }
+
+# ----------------- SHOPPING CART & MULTI-SHOP MANAGEMENT -----------------
+
+class CartItemAddRequest(BaseModel):
+    product_id: int
+    quantity: int = 1
+    selected_for_trial: bool = False
+    customer_mobile: Optional[str] = None
+
+class CartItemUpdateRequest(BaseModel):
+    quantity: Optional[int] = None
+    selected_for_trial: Optional[bool] = None
+
+class CartMoveFromWishlistRequest(BaseModel):
+    product_id: Union[str, int]
+    customer_mobile: Optional[str] = None
+
+class CartTrialSelectionRequest(BaseModel):
+    selected_product_ids: List[Union[str, int]]
+    customer_mobile: Optional[str] = None
+
+class CartCheckoutRequest(BaseModel):
+    customer_name: Optional[str] = None
+    customer_phone: Optional[str] = None
+    customer_email: Optional[str] = None
+    customer_address: Optional[str] = None
+    notes: Optional[str] = None
+    has_prescription: bool = False
+    prescription_url: Optional[str] = None
+    prescription_text: Optional[str] = None
+    is_home_trial: bool = False
+    is_vision_test_required: bool = False
+
+def resolve_customer(current_customer: Optional[Customer], customer_mobile: Optional[str], db: Session) -> Optional[Customer]:
+    if current_customer:
+        return current_customer
+    if customer_mobile:
+        clean_mob = re.sub(r"\D", "", customer_mobile)[-10:]
+        c = db.query(Customer).filter(Customer.mobile.endswith(clean_mob)).first()
+        if c:
+            return c
+    return db.query(Customer).first()
+
+@router.get("/cart")
+def get_customer_cart(
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    if not cust:
+        return {
+            "status": "success",
+            "items": [],
+            "total_items": 0,
+            "total_amount": 0.0,
+            "trial_frames_count": 0
+        }
+
+    items = db.query(CartItem).filter(CartItem.customer_id == cust.id).all()
+    formatted = []
+    total_amount = 0.0
+    trial_count = 0
+
+    for item in items:
+        p = item.product
+        if not p or not p.is_active:
+            continue
+        line_total = round(p.price * item.quantity, 2)
+        total_amount += line_total
+        if item.selected_for_trial:
+            trial_count += 1
+        formatted.append({
+            "id": item.id,
+            "product_id": p.id,
+            "product_code": p.product_id,
+            "name": p.name,
+            "brand": p.brand,
+            "shape": p.shape,
+            "material": p.material,
+            "color": p.color,
+            "frame_type": p.frame_type,
+            "size": p.size,
+            "lens_width_mm": p.lens_width_mm,
+            "bridge_width_mm": p.bridge_width_mm,
+            "temple_length_mm": p.temple_length_mm,
+            "price": p.price,
+            "quantity": item.quantity,
+            "line_total": line_total,
+            "stock_quantity": p.stock_quantity,
+            "in_stock": p.stock_quantity > 0,
+            "front_image": p.front_image,
+            "selected_for_trial": item.selected_for_trial,
+            "shop": {
+                "id": p.shop.id,
+                "shop_name": p.shop.shop_name,
+                "owner_name": p.shop.owner_name,
+                "shop_address": p.shop.shop_address,
+                "mobile_number": p.shop.mobile_number,
+                "operating_hours": p.shop.operating_hours,
+                "home_visit_available": p.shop.home_visit_available
+            }
+        })
+
+    return {
+        "status": "success",
+        "customer_id": cust.id,
+        "customer_name": cust.name,
+        "items": formatted,
+        "total_items": len(formatted),
+        "total_amount": round(total_amount, 2),
+        "trial_frames_count": trial_count,
+        "max_trial_frames": 10
+    }
+
+@router.post("/cart")
+def add_to_cart(
+    req: CartItemAddRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, req.customer_mobile, db)
+    if not cust:
+        raise HTTPException(status_code=401, detail="Please log in to add items to your cart.")
+
+    prod = db.query(Product).filter(Product.id == req.product_id, Product.is_active == True).first()
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found or inactive.")
+
+    if prod.stock_quantity <= 0:
+        raise HTTPException(status_code=400, detail=f"'{prod.name}' is currently out of stock.")
+
+    # Check trial frames count limit (max 10)
+    if req.selected_for_trial:
+        current_trial_count = db.query(CartItem).filter(
+            CartItem.customer_id == cust.id,
+            CartItem.selected_for_trial == True
+        ).count()
+        if current_trial_count >= 10:
+            raise HTTPException(status_code=400, detail="You can select a maximum of 10 frames for home trial.")
+
+    existing_item = db.query(CartItem).filter(
+        CartItem.customer_id == cust.id,
+        CartItem.product_id == prod.id
+    ).first()
+
+    if existing_item:
+        existing_item.quantity += max(1, req.quantity)
+        if req.selected_for_trial:
+            existing_item.selected_for_trial = True
+    else:
+        new_item = CartItem(
+            customer_id=cust.id,
+            product_id=prod.id,
+            quantity=max(1, req.quantity),
+            selected_for_trial=req.selected_for_trial
+        )
+        db.add(new_item)
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Added '{prod.name}' to your cart.",
+        "product_name": prod.name,
+        "shop_name": prod.shop.shop_name
+    }
+
+@router.put("/cart/{item_id}")
+def update_cart_item(
+    item_id: int,
+    req: CartItemUpdateRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    item = db.query(CartItem).filter(CartItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Cart item not found.")
+
+    if req.quantity is not None:
+        if req.quantity <= 0:
+            db.delete(item)
+            db.commit()
+            return {"status": "success", "message": "Item removed from cart."}
+        item.quantity = req.quantity
+
+    if req.selected_for_trial is not None:
+        if req.selected_for_trial and not item.selected_for_trial:
+            current_trial_count = db.query(CartItem).filter(
+                CartItem.customer_id == item.customer_id,
+                CartItem.selected_for_trial == True
+            ).count()
+            if current_trial_count >= 10:
+                raise HTTPException(status_code=400, detail="Maximum 10 frames can be selected for home trial.")
+        item.selected_for_trial = req.selected_for_trial
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": "Cart updated successfully.",
+        "item": {
+            "id": item.id,
+            "quantity": item.quantity,
+            "selected_for_trial": item.selected_for_trial
+        }
+    }
+
+@router.delete("/cart/{item_id}")
+def remove_from_cart(
+    item_id: int,
+    db: Session = Depends(get_db)
+):
+    item = db.query(CartItem).filter(CartItem.id == item_id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Cart item not found.")
+    db.delete(item)
+    db.commit()
+    return {"status": "success", "message": "Item removed from cart."}
+
+@router.post("/cart/move-from-wishlist")
+def move_wishlist_to_cart(
+    req: CartMoveFromWishlistRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, req.customer_mobile, db)
+    if not cust:
+        raise HTTPException(status_code=401, detail="Please log in to manage your cart.")
+
+    clean_pid = str(req.product_id).strip()
+    if clean_pid.isdigit():
+        prod = db.query(Product).filter((Product.id == int(clean_pid)) | (Product.product_id == clean_pid)).first()
+    else:
+        prod = db.query(Product).filter(Product.product_id == clean_pid).first()
+
+    if not prod:
+        raise HTTPException(status_code=404, detail="Product not found.")
+
+    # Add to cart
+    existing_item = db.query(CartItem).filter(
+        CartItem.customer_id == cust.id,
+        CartItem.product_id == prod.id
+    ).first()
+    if existing_item:
+        existing_item.quantity += 1
+    else:
+        new_item = CartItem(customer_id=cust.id, product_id=prod.id, quantity=1)
+        db.add(new_item)
+
+    # Remove from wishlist picks
+    wishlist_pick = db.query(CustomerFramePick).filter(
+        CustomerFramePick.customer_id == cust.id,
+        (CustomerFramePick.product_id == clean_pid) | (CustomerFramePick.product_id == str(prod.id))
+    ).first()
+    if wishlist_pick:
+        db.delete(wishlist_pick)
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Moved '{prod.name}' from Wishlist to Cart.",
+        "product_name": prod.name,
+        "shop_name": prod.shop.shop_name
+    }
+
+@router.post("/cart/set-trial-selection")
+def set_trial_selection(
+    req: CartTrialSelectionRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Select up to 10 frames from cart for home trial.
+    """
+    cust = resolve_customer(current_customer, req.customer_mobile, db)
+    if not cust:
+        raise HTTPException(status_code=401, detail="Customer login required.")
+
+    if len(req.selected_product_ids) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 frames can be selected for home trial.")
+
+    cart_items = db.query(CartItem).filter(CartItem.customer_id == cust.id).all()
+    target_ids = set(str(pid) for pid in req.selected_product_ids)
+
+    for item in cart_items:
+        is_selected = (str(item.product_id) in target_ids) or (str(item.product.product_id) in target_ids)
+        item.selected_for_trial = is_selected
+
+    db.commit()
+    selected_count = sum(1 for item in cart_items if item.selected_for_trial)
+    return {
+        "status": "success",
+        "message": f"Updated home trial selection ({selected_count}/10 frames selected).",
+        "selected_count": selected_count
+    }
+
+@router.post("/cart/checkout")
+def checkout_cart(
+    req: CartCheckoutRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Multi-Shop Order Placement:
+    Separates items in the customer's cart so each optical shop receives only its own frames.
+    Preserves prescription details, home trial flag, and delivery address.
+    """
+    cust = resolve_customer(current_customer, req.customer_phone, db)
+    if not cust:
+        raise HTTPException(status_code=401, detail="Please log in to place an order.")
+
+    cart_items = db.query(CartItem).filter(CartItem.customer_id == cust.id).all()
+    if not cart_items:
+        raise HTTPException(status_code=400, detail="Your cart is empty. Add frames before checking out.")
+
+    cust_name = req.customer_name.strip() if req.customer_name else cust.name
+    cust_phone = req.customer_phone.strip() if req.customer_phone else cust.mobile
+    cust_email = req.customer_email.strip() if req.customer_email else cust.email
+    cust_address = req.customer_address.strip() if req.customer_address else (cust.address or "Address provided on delivery")
+
+    # Update customer profile address if newly provided
+    if req.customer_address and not cust.address:
+        cust.address = req.customer_address.strip()
+
+    created_orders = []
+    # Group items by shop
+    for item in cart_items:
+        prod = item.product
+        if not prod or not prod.is_active:
+            continue
+
+        # Check stock
+        qty = min(item.quantity, max(1, prod.stock_quantity))
+        prod.stock_quantity = max(0, prod.stock_quantity - qty)
+
+        order_num = f"ORD-{datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')}-{prod.id}-{prod.shop_id}-{secrets.token_hex(2)}"
+        new_order = Order(
+            order_number=order_num,
+            shop_id=prod.shop_id,
+            customer_id=cust.id,
+            customer_name=cust_name,
+            customer_phone=cust_phone,
+            customer_email=cust_email,
+            customer_address=cust_address,
+            product_id=prod.id,
+            product_code=prod.product_id,
+            product_name=prod.name,
+            quantity=qty,
+            unit_price=prod.price,
+            total_amount=round(prod.price * qty, 2),
+            status="Order Placed",
+            has_prescription=req.has_prescription,
+            prescription_url=req.prescription_url,
+            prescription_text=req.prescription_text,
+            is_home_trial=req.is_home_trial or item.selected_for_trial,
+            is_vision_test_required=req.is_vision_test_required,
+            notes=req.notes or f"Order placed via EyeReach Multi-Shop Boutique. Supplier: {prod.shop.shop_name}."
+        )
+        db.add(new_order)
+        created_orders.append({
+            "order_number": order_num,
+            "product_name": prod.name,
+            "shop_name": prod.shop.shop_name,
+            "shop_id": prod.shop_id,
+            "total_amount": round(prod.price * qty, 2)
+        })
+
+        # Notify customer
+        notif = CustomerNotification(
+            customer_id=cust.id,
+            shop_id=prod.shop_id,
+            title="Order Placed",
+            message=f"Your order #{order_num} for '{prod.name}' has been placed with {prod.shop.shop_name}.",
+            notification_type="order",
+            reference_id=order_num
+        )
+        db.add(notif)
+
+    # Clear customer cart
+    for item in cart_items:
+        db.delete(item)
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Successfully placed {len(created_orders)} item order(s) across optical shop partners!",
+        "orders": created_orders,
+        "total_orders": len(created_orders)
+    }
+
+# ----------------- CUSTOMER ORDERS & DELIVERY STATUS -----------------
+
+@router.get("/orders")
+def get_customer_orders(
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves all orders placed by the current customer, ordered by newest first.
+    Preserves live backend status synchronization with shop inventory updates.
+    """
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    if not cust:
+        return {"status": "success", "orders": [], "total": 0}
+
+    clean_mob = re.sub(r"\D", "", cust.mobile)[-10:] if cust.mobile else ""
+    orders = db.query(Order).filter(
+        (Order.customer_id == cust.id) |
+        (Order.customer_phone.endswith(clean_mob) if clean_mob else False)
+    ).order_by(Order.created_at.desc()).all()
+
+    results = []
+    for o in orders:
+        results.append({
+            "id": o.id,
+            "order_number": o.order_number,
+            "product_id": o.product_id,
+            "product_code": o.product_code,
+            "product_name": o.product_name,
+            "quantity": o.quantity,
+            "unit_price": o.unit_price,
+            "total_amount": o.total_amount,
+            "status": o.status,
+            "rejection_reason": o.rejection_reason,
+            "shop_id": o.shop_id,
+            "shop_name": o.shop.shop_name if o.shop else "Optical Boutique",
+            "shop_phone": o.shop.mobile_number if o.shop else None,
+            "shop_address": o.shop.shop_address if o.shop else None,
+            "created_at": o.created_at.strftime("%d %b %Y, %I:%M %p") if o.created_at else "",
+            "customer_address": o.customer_address,
+            "has_prescription": o.has_prescription,
+            "prescription_text": o.prescription_text,
+            "is_home_trial": o.is_home_trial,
+            "notes": o.notes,
+            "front_image": o.product.front_image if o.product else None
+        })
+
+    return {"status": "success", "orders": results, "total": len(results)}
+
+@router.patch("/orders/{id}/received")
+def confirm_order_received(
+    id: int,
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Customer Delivery Confirmation endpoint.
+    Transitions order status from Delivered to Customer Received.
+    Synchronizes status with optical shop dashboard and logs confirmation notification.
+    """
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    order = db.query(Order).filter(Order.id == id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    # Update status to Customer Received
+    order.status = "Customer Received"
+
+    notif = CustomerNotification(
+        customer_id=order.customer_id or (cust.id if cust else 1),
+        shop_id=order.shop_id,
+        title="Delivery Received Confirmed",
+        message=f"You have confirmed delivery receipt for order #{order.order_number} ('{order.product_name}'). Thank you for choosing EyeReach!",
+        notification_type="order",
+        reference_id=order.order_number
+    )
+    db.add(notif)
+    db.commit()
+    db.refresh(order)
+
+    return {
+        "status": "success",
+        "message": f"Delivery confirmed! Order #{order.order_number} marked as Customer Received.",
+        "order_status": order.status
+    }
+
+# ----------------- TWO DISTINCT HOME SERVICES (TRIAL & VISION TEST) -----------------
+
+class HomeServiceBookRequest(BaseModel):
+    service_type: str = "both" # "frame_trial" | "vision_test" | "both"
+    shop_id: Optional[int] = None
+    appointment_date: str
+    appointment_time: str
+    full_name: str
+    mobile_number: str
+    email: str
+    home_address: str
+    purpose: Optional[str] = None
+    additional_message: Optional[str] = None
+    selected_frames: Optional[List[dict]] = None # Max 10 frames
+    has_prescription: bool = False
+    prescription_data: Optional[dict] = None
+    prescription_file: Optional[str] = None
+    face_analysis: Optional[dict] = None
+
+@router.post("/home-services/book")
+def book_home_service(
+    req: HomeServiceBookRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Supports two separate independent services or both together:
+    - Service A: Frame Selection Home Visit (up to 10 frames tried at home)
+    - Service B: Home Vision Test (Option 1: existing prescription entered/uploaded; Option 2: new vision test requested)
+    - Combined: Frame selection + Home vision examination
+    Never forces vision testing if existing prescription is provided.
+    Never claims camera measurements determine actual eye power.
+    """
+    cust = resolve_customer(current_customer, req.mobile_number, db)
+
+    # 1. Validate frames count
+    frames = req.selected_frames or []
+    if len(frames) > 10:
+        raise HTTPException(status_code=400, detail="Maximum 10 spectacle frames can be selected for home visit trial.")
+
+    # 2. Validate date
+    try:
+        appt_d = datetime.date.fromisoformat(req.appointment_date.strip())
+        if appt_d < datetime.date.today():
+            raise HTTPException(status_code=400, detail="Appointment date cannot be in the past.")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD.")
+
+    if not req.home_address.strip() or len(req.home_address.strip()) < 5:
+        raise HTTPException(status_code=400, detail="Please provide a valid residential address for doorstep service.")
+
+    # 3. Determine supplying shop
+    target_shop = None
+    if req.shop_id:
+        target_shop = db.query(Shop).filter(Shop.id == req.shop_id).first()
+    if not target_shop and frames:
+        first_frame = frames[0]
+        pid = first_frame.get("product_id") or first_frame.get("id")
+        if pid:
+            query = db.query(Product)
+            if str(pid).isdigit():
+                p = query.filter((Product.id == int(pid)) | (Product.product_id == str(pid))).first()
+            else:
+                p = query.filter(Product.product_id == str(pid)).first()
+            if p and p.shop:
+                target_shop = p.shop
+    if not target_shop:
+        target_shop = db.query(Shop).first()
+
+    norm_service = req.service_type.lower().strip()
+    if norm_service not in ["frame_trial", "vision_test", "both"]:
+        norm_service = "both"
+
+    shop_title = target_shop.shop_name if target_shop else "EyeReach Partner Store"
+    fa = req.face_analysis or {}
+
+    # Case A: Frame Trial at Home (Only)
+    if norm_service == "frame_trial":
+        appt_num = f"HS-FT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+        new_appt = Appointment(
+            appointment_id=appt_num,
+            appointment_type="home_testing",
+            service_type="frame_trial",
+            shop_id=target_shop.id if target_shop else 1,
+            full_name=req.full_name.strip(),
+            mobile_number=req.mobile_number.strip(),
+            email=req.email.strip(),
+            appointment_date=req.appointment_date.strip(),
+            appointment_time=req.appointment_time.strip(),
+            meeting_mode=None,
+            home_address=req.home_address.strip(),
+            purpose="Frame Trial at Home (Up to 10 Frames)",
+            additional_message=req.additional_message.strip() if req.additional_message else None,
+            status="Pending",
+            visit_status="Pending",
+            has_prescription=False,
+            prescription_file=None,
+            prescription_data_json=None,
+            selected_frames_json=json.dumps(frames) if frames else "[]",
+            face_shape=fa.get("face_shape"),
+            ipd_mm=fa.get("ipd_mm"),
+            eye_shape=fa.get("eye_shape"),
+            face_width_mm=fa.get("face_width_mm"),
+            face_length_mm=fa.get("face_length_mm"),
+            jaw_width_mm=fa.get("jaw_width_mm"),
+            skin_tone=fa.get("skin_tone"),
+            undertone=fa.get("undertone"),
+            head_circumference_cm=fa.get("head_circumference_cm"),
+            face_sketch_image=fa.get("face_sketch_image"),
+            face_analysis_summary=fa.get("face_analysis_summary") or "Facial scan measurements for physical frame size verification only.",
+            doctor_id=None
+        )
+        db.add(new_appt)
+
+        # Update customer profile address if not saved
+        if cust and not cust.address:
+            cust.address = req.home_address.strip()
+
+        notif = CustomerNotification(
+            customer_id=cust.id if cust else 1,
+            shop_id=target_shop.id if target_shop else 1,
+            title="Frame Trial Booking Received",
+            message=f"Your Frame Trial at Home request (Ref: {appt_num}) with {len(frames)} frame(s) for {req.appointment_date} at {req.appointment_time} was submitted to {shop_title}.",
+            notification_type="home_trial",
+            reference_id=appt_num
+        )
+        db.add(notif)
+        db.commit()
+        db.refresh(new_appt)
+
+        return {
+            "status": "success",
+            "appointment_id": new_appt.appointment_id,
+            "service_type": "frame_trial",
+            "shop_name": shop_title,
+            "appointment_date": new_appt.appointment_date,
+            "appointment_time": new_appt.appointment_time,
+            "home_address": new_appt.home_address,
+            "visit_status": new_appt.visit_status,
+            "selected_frames_count": len(frames),
+            "has_prescription": False,
+            "message": f"Your Frame Trial request ({len(frames)} frames) has been received by {shop_title}! You can track its progress in your portal."
+        }
+
+    # Case B: Home Vision Test (Only)
+    elif norm_service == "vision_test":
+        appt_num = f"HS-VT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+        doc = db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first()
+        if not doc:
+            doc = db.query(Doctor).filter(Doctor.is_active == True).first()
+
+        new_appt = Appointment(
+            appointment_id=appt_num,
+            appointment_type="home_testing",
+            service_type="vision_test",
+            shop_id=target_shop.id if target_shop else 1,
+            full_name=req.full_name.strip(),
+            mobile_number=req.mobile_number.strip(),
+            email=req.email.strip(),
+            appointment_date=req.appointment_date.strip(),
+            appointment_time=req.appointment_time.strip(),
+            meeting_mode=None,
+            home_address=req.home_address.strip(),
+            purpose="Home Vision Test",
+            additional_message=req.additional_message.strip() if req.additional_message else None,
+            status="Pending",
+            visit_status="Pending",
+            has_prescription=req.has_prescription,
+            prescription_file=req.prescription_file,
+            prescription_data_json=json.dumps(req.prescription_data) if req.prescription_data else None,
+            selected_frames_json="[]",
+            face_shape=fa.get("face_shape"),
+            ipd_mm=fa.get("ipd_mm"),
+            eye_shape=fa.get("eye_shape"),
+            face_width_mm=fa.get("face_width_mm"),
+            face_length_mm=fa.get("face_length_mm"),
+            jaw_width_mm=fa.get("jaw_width_mm"),
+            skin_tone=fa.get("skin_tone"),
+            undertone=fa.get("undertone"),
+            head_circumference_cm=fa.get("head_circumference_cm"),
+            face_sketch_image=fa.get("face_sketch_image"),
+            face_analysis_summary=fa.get("face_analysis_summary") or "Facial scan measurements for physical frame size verification only.",
+            doctor_id=doc.id if doc else None
+        )
+        db.add(new_appt)
+
+        if cust and not cust.address:
+            cust.address = req.home_address.strip()
+
+        notif = CustomerNotification(
+            customer_id=cust.id if cust else 1,
+            shop_id=target_shop.id if target_shop else 1,
+            title="Vision Test Booking Received",
+            message=f"Your Home Vision Test appointment request (Ref: {appt_num}) for {req.appointment_date} at {req.appointment_time} was submitted to {shop_title}.",
+            notification_type="vision_test",
+            reference_id=appt_num
+        )
+        db.add(notif)
+        db.commit()
+        db.refresh(new_appt)
+
+        return {
+            "status": "success",
+            "appointment_id": new_appt.appointment_id,
+            "service_type": "vision_test",
+            "shop_name": shop_title,
+            "appointment_date": new_appt.appointment_date,
+            "appointment_time": new_appt.appointment_time,
+            "home_address": new_appt.home_address,
+            "visit_status": new_appt.visit_status,
+            "selected_frames_count": 0,
+            "has_prescription": new_appt.has_prescription,
+            "message": f"Your Home Vision Test request has been received by {shop_title}! You can track doctor confirmation in your portal."
+        }
+
+    # Case C: Both Services (Separate independent appointments and statuses)
+    else:
+        appt_trial_num = f"HS-FT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+        appt_vision_num = f"HS-VT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
+
+        doc = db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first()
+        if not doc:
+            doc = db.query(Doctor).filter(Doctor.is_active == True).first()
+
+        # 1. Frame Trial appointment
+        appt_trial = Appointment(
+            appointment_id=appt_trial_num,
+            appointment_type="home_testing",
+            service_type="frame_trial",
+            shop_id=target_shop.id if target_shop else 1,
+            full_name=req.full_name.strip(),
+            mobile_number=req.mobile_number.strip(),
+            email=req.email.strip(),
+            appointment_date=req.appointment_date.strip(),
+            appointment_time=req.appointment_time.strip(),
+            meeting_mode=None,
+            home_address=req.home_address.strip(),
+            purpose="Frame Trial at Home (Up to 10 Frames)",
+            additional_message=req.additional_message.strip() if req.additional_message else None,
+            status="Pending",
+            visit_status="Pending",
+            has_prescription=False,
+            prescription_file=None,
+            prescription_data_json=None,
+            selected_frames_json=json.dumps(frames) if frames else "[]",
+            face_shape=fa.get("face_shape"),
+            ipd_mm=fa.get("ipd_mm"),
+            eye_shape=fa.get("eye_shape"),
+            face_width_mm=fa.get("face_width_mm"),
+            face_length_mm=fa.get("face_length_mm"),
+            jaw_width_mm=fa.get("jaw_width_mm"),
+            skin_tone=fa.get("skin_tone"),
+            undertone=fa.get("undertone"),
+            head_circumference_cm=fa.get("head_circumference_cm"),
+            face_sketch_image=fa.get("face_sketch_image"),
+            face_analysis_summary=fa.get("face_analysis_summary") or "Facial scan measurements for physical frame size verification only.",
+            doctor_id=None
+        )
+        db.add(appt_trial)
+
+        # 2. Vision Test appointment
+        appt_vision = Appointment(
+            appointment_id=appt_vision_num,
+            appointment_type="home_testing",
+            service_type="vision_test",
+            shop_id=target_shop.id if target_shop else 1,
+            full_name=req.full_name.strip(),
+            mobile_number=req.mobile_number.strip(),
+            email=req.email.strip(),
+            appointment_date=req.appointment_date.strip(),
+            appointment_time=req.appointment_time.strip(),
+            meeting_mode=None,
+            home_address=req.home_address.strip(),
+            purpose="Home Vision Test",
+            additional_message=req.additional_message.strip() if req.additional_message else None,
+            status="Pending",
+            visit_status="Pending",
+            has_prescription=req.has_prescription,
+            prescription_file=req.prescription_file,
+            prescription_data_json=json.dumps(req.prescription_data) if req.prescription_data else None,
+            selected_frames_json="[]",
+            face_shape=fa.get("face_shape"),
+            ipd_mm=fa.get("ipd_mm"),
+            eye_shape=fa.get("eye_shape"),
+            face_width_mm=fa.get("face_width_mm"),
+            face_length_mm=fa.get("face_length_mm"),
+            jaw_width_mm=fa.get("jaw_width_mm"),
+            skin_tone=fa.get("skin_tone"),
+            undertone=fa.get("undertone"),
+            head_circumference_cm=fa.get("head_circumference_cm"),
+            face_sketch_image=fa.get("face_sketch_image"),
+            face_analysis_summary=fa.get("face_analysis_summary") or "Facial scan measurements for physical frame size verification only.",
+            doctor_id=doc.id if doc else None
+        )
+        db.add(appt_vision)
+
+        if cust and not cust.address:
+            cust.address = req.home_address.strip()
+
+        # Customer notifications for both
+        notif1 = CustomerNotification(
+            customer_id=cust.id if cust else 1,
+            shop_id=target_shop.id if target_shop else 1,
+            title="Frame Trial Booking Received",
+            message=f"Your Frame Trial at Home request (Ref: {appt_trial_num}) with {len(frames)} frame(s) for {req.appointment_date} at {req.appointment_time} was submitted to {shop_title}.",
+            notification_type="home_trial",
+            reference_id=appt_trial_num
+        )
+        notif2 = CustomerNotification(
+            customer_id=cust.id if cust else 1,
+            shop_id=target_shop.id if target_shop else 1,
+            title="Vision Test Booking Received",
+            message=f"Your Home Vision Test appointment request (Ref: {appt_vision_num}) for {req.appointment_date} at {req.appointment_time} was submitted to {shop_title}.",
+            notification_type="vision_test",
+            reference_id=appt_vision_num
+        )
+        db.add(notif1)
+        db.add(notif2)
+        db.commit()
+        db.refresh(appt_trial)
+        db.refresh(appt_vision)
+
+        return {
+            "status": "success",
+            "appointment_id": appt_trial.appointment_id,
+            "service_type": "both",
+            "shop_name": shop_title,
+            "appointment_date": req.appointment_date,
+            "appointment_time": req.appointment_time,
+            "home_address": req.home_address,
+            "visit_status": "Pending",
+            "selected_frames_count": len(frames),
+            "has_prescription": req.has_prescription,
+            "message": f"Both services booked successfully! Frame Trial (Ref: {appt_trial_num}) and Vision Test (Ref: {appt_vision_num}) are tracked independently.",
+            "appointments": [
+                {
+                    "appointment_id": appt_trial.appointment_id,
+                    "service_type": "frame_trial",
+                    "purpose": "Frame Trial at Home (Up to 10 Frames)",
+                    "selected_frames_count": len(frames),
+                    "status": appt_trial.status
+                },
+                {
+                    "appointment_id": appt_vision.appointment_id,
+                    "service_type": "vision_test",
+                    "purpose": "Home Vision Test",
+                    "doctor_assigned": doc.name if doc else None,
+                    "status": appt_vision.status
+                }
+            ]
+        }
+
+@router.get("/home-services/my-requests")
+def get_my_home_services(
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    query = db.query(Appointment).filter(Appointment.appointment_type == "home_testing")
+    if cust:
+        clean_mob = cust.mobile[-10:] if cust.mobile else ""
+        query = query.filter((Appointment.mobile_number.endswith(clean_mob)) | (Appointment.email == cust.email))
+
+    appts = query.order_by(Appointment.id.desc()).all()
+    results = []
+    for a in appts:
+        frames = []
+        if a.selected_frames_json:
+            try:
+                frames = json.loads(a.selected_frames_json)
+            except Exception:
+                frames = []
+        rx = None
+        if a.prescription_data_json:
+            try:
+                rx = json.loads(a.prescription_data_json)
+            except Exception:
+                rx = None
+        results.append({
+            "id": a.id,
+            "appointment_id": a.appointment_id,
+            "service_type": a.service_type or "both",
+            "appointment_date": a.appointment_date,
+            "appointment_time": a.appointment_time,
+            "home_address": a.home_address,
+            "status": a.status,
+            "visit_status": a.visit_status or a.status,
+            "rejection_reason": a.rejection_reason,
+            "final_selected_frame_id": a.final_selected_frame_id,
+            "shop_name": a.shop.shop_name if a.shop else "EyeReach Partner Store",
+            "doctor_name": a.doctor.name if a.doctor else None,
+            "has_prescription": a.has_prescription,
+            "prescription_file": a.prescription_file,
+            "prescription_data": rx,
+            "selected_frames": frames,
+            "selected_frames_count": len(frames),
+            "created_at": a.created_at.strftime("%d %b %Y, %I:%M %p") if a.created_at else ""
+        })
+    return {"status": "success", "requests": results, "total": len(results)}
+
+# ----------------- NOTIFICATIONS AND REMINDERS -----------------
+
+@router.get("/notifications")
+def get_customer_notifications(
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    if not cust:
+        return {"status": "success", "notifications": [], "unread_count": 0}
+
+    # Ensure automated periodic eye checkup reminder exists
+    checkup_rem = db.query(CustomerNotification).filter(
+        CustomerNotification.customer_id == cust.id,
+        CustomerNotification.notification_type == "reminder"
+    ).first()
+
+    if not checkup_rem:
+        reminder = CustomerNotification(
+            customer_id=cust.id,
+            title="Periodic Eye Checkup Reminder",
+            message="Friendly Reminder: An annual comprehensive eye exam helps preserve vision health and ensure accurate corrective lens power.",
+            notification_type="reminder"
+        )
+        db.add(reminder)
+        db.commit()
+
+    notifs = db.query(CustomerNotification).filter(
+        CustomerNotification.customer_id == cust.id
+    ).order_by(CustomerNotification.created_at.desc()).all()
+
+    unread = sum(1 for n in notifs if not n.is_read)
+    return {
+        "status": "success",
+        "unread_count": unread,
+        "total": len(notifs),
+        "notifications": [
+            {
+                "id": n.id,
+                "title": n.title,
+                "message": n.message,
+                "notification_type": n.notification_type,
+                "reference_id": n.reference_id,
+                "is_read": n.is_read,
+                "created_at": n.created_at.strftime("%d %b %Y, %I:%M %p") if n.created_at else ""
+            }
+            for n in notifs
+        ]
+    }
+
+@router.patch("/notifications/{id}/read")
+def mark_notification_read(id: int, db: Session = Depends(get_db)):
+    notif = db.query(CustomerNotification).filter(CustomerNotification.id == id).first()
+    if not notif:
+        raise HTTPException(status_code=404, detail="Notification not found.")
+    notif.is_read = True
+    db.commit()
+    return {
+        "status": "success",
+        "message": "Notification marked as read.",
+        "notification": {
+            "id": notif.id,
+            "title": notif.title,
+            "message": notif.message,
+            "is_read": notif.is_read,
+            "notification_type": notif.notification_type
+        }
+    }
+
+@router.post("/notifications/mark-all-read")
+def mark_all_notifications_read(
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    if cust:
+        db.query(CustomerNotification).filter(CustomerNotification.customer_id == cust.id).update({"is_read": True})
+        db.commit()
+    return {"status": "success", "message": "All notifications marked as read."}
+
+@router.post("/reminders/checkup")
+def schedule_eye_checkup_reminder(
+    months: int = 6,
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    if not cust:
+        raise HTTPException(status_code=401, detail="Customer login required.")
+
+    notif = CustomerNotification(
+        customer_id=cust.id,
+        title=f"Scheduled {months}-Month Eye Checkup Reminder",
+        message=f"Reminder scheduled: Your next recommended comprehensive eye exam is due in {months} months. You can book a home vision visit anytime through EyeReach.",
+        notification_type="reminder"
+    )
+    db.add(notif)
+    db.commit()
+    return {"status": "success", "message": f"Eye checkup reminder scheduled for {months} months."}
+

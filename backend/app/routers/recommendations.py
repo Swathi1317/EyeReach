@@ -239,11 +239,12 @@ def get_recommendations(req: RecommendationRequest):
         
         # 2. Face Shape & Style Matrix
         shape_matrix = {
-            "heart": {"highly": ["cat-eye", "aviator", "round", "oval"]},
+            "diamond": {"highly": ["browline", "cat-eye", "cat eye", "oval", "round", "rimless"]},
+            "heart": {"highly": ["cat-eye", "cat eye", "aviator", "round", "oval", "browline"]},
             "oblong": {"highly": ["square", "rectangle", "oversized", "wayfarer"]},
-            "oval": {"highly": ["square", "rectangle", "cat-eye", "aviator", "round"]},
-            "round": {"highly": ["square", "rectangle", "wayfarer", "browline"]},
-            "square": {"highly": ["round", "oval", "aviator", "cat-eye"]}
+            "oval": {"highly": ["square", "rectangle", "cat-eye", "cat eye", "aviator", "round", "oval", "geometric", "wayfarer"]},
+            "round": {"highly": ["square", "rectangle", "wayfarer", "browline", "geometric"]},
+            "square": {"highly": ["round", "oval", "aviator", "cat-eye", "cat eye", "browline"]}
         }
         
         prefs = shape_matrix.get(face_shape, shape_matrix["oval"])
@@ -637,6 +638,7 @@ def get_recommendations(req: RecommendationRequest):
         })
         
     # Sort by score descending
+    scored_frames.sort(key=lambda x: x["final_score"], reverse=True)
     # Return 24–30 suitable frames in total (Requirement 5: approximately 22–30 suitable frames total, top 5 highlighted)
     top_frames = scored_frames[:28]
     

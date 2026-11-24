@@ -8,3 +8,7 @@ backups/
 backend/data/temp_rot.jpg
 frontend/dist/
 frontend/node_modules/
+cloudflared.exe
+*.exe
+scratch/
+smartframe.db

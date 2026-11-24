@@ -187,14 +187,14 @@ class SideProfileAnalyzer:
         d_nose_left_ear = float(np.linalg.norm(mapped[1] - mapped[454]))
         d_nose_right_ear = float(np.linalg.norm(mapped[1] - mapped[234]))
 
-        # Strict near-profile yaw thresholds (~45° to 88°, ideally ~70°–85°)
-        # Rejects slight turns (< 44°) and three-quarter turns.
-        MIN_STRICT_YAW = 44.0
+        # Robust near-profile yaw thresholds (~32° to 88°, ideally ~50°–80°)
+        # Rejects frontal/slight turns (< 32°) and excessive turns (> 88°)
+        MIN_STRICT_YAW = 32.0
         MAX_PERMISSIBLE_YAW = 88.0
 
         if expected_side == "left":
-            # Check for incorrect right turn (yaw > 12° or left ear extended much further)
-            if yaw > 12.0 or (d_nose_left_ear > d_nose_right_ear * 1.30 and yaw > 5.0):
+            # True orientation mismatch: user turned right instead of left (yaw > 20.0 or strong left ear extension with positive yaw)
+            if yaw > 20.0 or (d_nose_left_ear > d_nose_right_ear * 1.30 and yaw > 10.0):
                 return {
                     "status": "invalid",
                     "side": expected_side,
@@ -202,14 +202,14 @@ class SideProfileAnalyzer:
                     "quality": {"status": "invalid", "reasons": ["orientation_mismatch"]},
                     "message": "Orientation mismatch: You turned right instead of left. Please turn your head to your left."
                 }
-            # Check for insufficient turn (reject slight & 3/4 turns)
+            # Check for insufficient turn (reject frontal / slight turns)
             if abs(yaw) < MIN_STRICT_YAW:
                 return {
                     "status": "invalid",
                     "side": expected_side,
                     "head_pose": {"yaw_deg": round(yaw, 1), "pitch_deg": round(pitch, 1), "roll_deg": round(roll, 1)},
                     "quality": {"status": "invalid", "reasons": ["insufficient_head_turn"]},
-                    "message": f"Insufficient head turn ({abs(yaw):.1f}°): Please turn your face sideways into a near-profile view (~75°–85°)."
+                    "message": f"Insufficient head turn ({abs(yaw):.1f}°): Please turn your face sideways into a near-profile view (~50°–80°)."
                 }
             # Check for excessive turn where face is turned completely away
             if abs(yaw) > MAX_PERMISSIBLE_YAW:
@@ -222,8 +222,8 @@ class SideProfileAnalyzer:
                 }
 
         elif expected_side == "right":
-            # Check for incorrect left turn (yaw < -12° or right ear extended much further)
-            if yaw < -12.0 or (d_nose_right_ear > d_nose_left_ear * 1.30 and yaw < -5.0):
+            # True orientation mismatch: user turned left instead of right (yaw < -20.0 or strong right ear extension with negative yaw)
+            if yaw < -20.0 or (d_nose_right_ear > d_nose_left_ear * 1.30 and yaw < -10.0):
                 return {
                     "status": "invalid",
                     "side": expected_side,
@@ -231,14 +231,14 @@ class SideProfileAnalyzer:
                     "quality": {"status": "invalid", "reasons": ["orientation_mismatch"]},
                     "message": "Orientation mismatch: You turned left instead of right. Please turn your head to your right."
                 }
-            # Check for insufficient turn (reject slight & 3/4 turns)
+            # Check for insufficient turn (reject frontal / slight turns)
             if abs(yaw) < MIN_STRICT_YAW:
                 return {
                     "status": "invalid",
                     "side": expected_side,
                     "head_pose": {"yaw_deg": round(yaw, 1), "pitch_deg": round(pitch, 1), "roll_deg": round(roll, 1)},
                     "quality": {"status": "invalid", "reasons": ["insufficient_head_turn"]},
-                    "message": f"Insufficient head turn ({abs(yaw):.1f}°): Please turn your face sideways into a near-profile view (~75°–85°)."
+                    "message": f"Insufficient head turn ({abs(yaw):.1f}°): Please turn your face sideways into a near-profile view (~50°–80°)."
                 }
             # Check for excessive turn
             if abs(yaw) > MAX_PERMISSIBLE_YAW:
@@ -250,7 +250,7 @@ class SideProfileAnalyzer:
                     "message": f"Excessive head turn ({abs(yaw):.1f}°): Head turned too far away. Ensure your eye, nose profile, and ear remain visible."
                 }
 
-        # 3. Whole Visible Side Profile Landmark Identification
+        # 3. Whole Visible Side Profile Landmark Identification (Saturday Working Version)
         # Dynamically determine the visible profile facing the camera:
         # In a right turn (yaw > 0), the left ear (454) and left eye (263) face the camera.
         # In a left turn (yaw < 0), the right ear (234) and right eye (33) face the camera.
@@ -332,13 +332,13 @@ class SideProfileAnalyzer:
 
         if is_calibrated:
             eye_to_ear_mm = round(eye_to_ear_px * mm_per_px, 1)
-            # Estimated temple reach (not actual frame temple length; reach to mastoid groove ~1.35x direct projection)
+            # Estimated temple reach (reach to retroauricular mastoid groove ~1.35x direct projection)
             estimated_temple_length_mm = round(eye_to_ear_mm * 1.35, 1)
             profile_height_mm = round(profile_height_px * mm_per_px, 1)
             nose_bridge_mm = round(nose_bridge_px * mm_per_px, 1)
             hinge_to_apex_mm = round(hinge_to_apex_px * mm_per_px, 1)
 
-        # 5. High-Clarity Multi-Feature Annotated Overlay Image Generation
+        # 5. High-Clarity Multi-Feature Annotated Overlay Image Generation (Matching Working Version from 2 Days Ago)
         annotated = image.copy()
 
         # A. Draw Visible Sagittal Facial Profile Contour Polyline (Forehead -> Nose -> Subnasale -> Lips -> Chin)
@@ -360,7 +360,7 @@ class SideProfileAnalyzer:
         # D. Draw Nose Profile Vector (Glabella -> Nose Tip)
         cv2.line(annotated, tuple(glabella_pt.astype(int)), tuple(nose_tip_pt.astype(int)), (0, 220, 255), 2, cv2.LINE_AA)
 
-        # E. Draw Eye-to-Ear Primary Measurement Line (Hinge -> Tragus)
+        # E. Draw Eye-to-Ear Primary Measurement Line (Hinge -> Tragus) with Caliper End Caps
         pt_h = tuple(hinge_pt.astype(int))
         pt_e = tuple(ear_tragus_pt.astype(int))
         cv2.line(annotated, pt_h, pt_e, (0, 235, 255), 3, cv2.LINE_AA) # Vibrant amber/yellow
@@ -399,7 +399,7 @@ class SideProfileAnalyzer:
 
         # J. HUD Info Header Card (Top-Left)
         hud_lines = [
-            (f"{expected_side.upper()} SIDE PROFILE  |  Yaw: {abs(yaw):.1f}° (Near Profile)", (0, 220, 255)),
+            (f"{expected_side.upper()} SIDE PROFILE  |  Yaw: {abs(yaw):.1f} deg (Near Profile)", (0, 220, 255)),
             (f"Scale: {'CALIBRATED (Front Iris Scale)' if is_calibrated else 'UNCALIBRATED ESTIMATE'}", (100, 235, 120) if is_calibrated else (80, 180, 255)),
             (f"Eye-to-Ear: {eye_to_ear_mm:.1f} mm  |  Hinge-to-Apex: {hinge_to_apex_mm:.1f} mm" if is_calibrated else f"Eye-to-Ear: {eye_to_ear_px:.0f} px", (255, 255, 255))
         ]
@@ -412,6 +412,10 @@ class SideProfileAnalyzer:
         _, buffer = cv2.imencode('.jpg', annotated, [cv2.IMWRITE_JPEG_QUALITY, 88])
         annotated_b64 = base64.b64encode(buffer).decode('utf-8')
 
+        # Encode clean image without HUD overlays
+        _, clean_buffer = cv2.imencode('.jpg', image, [cv2.IMWRITE_JPEG_QUALITY, 90])
+        clean_b64 = base64.b64encode(clean_buffer).decode('utf-8')
+
         return {
             "status": "valid",
             "side": expected_side,
@@ -423,8 +427,11 @@ class SideProfileAnalyzer:
             },
             "landmarks_detected": {
                 "hinge_reference_px": [round(float(hinge_pt[0]), 1), round(float(hinge_pt[1]), 1)],
+                "outer_eye_corner_px": [round(float(hinge_pt[0]), 1), round(float(hinge_pt[1]), 1)],
                 "ear_reference_px": [round(float(ear_tragus_pt[0]), 1), round(float(ear_tragus_pt[1]), 1)],
+                "ear_tragus_px": [round(float(ear_tragus_pt[0]), 1), round(float(ear_tragus_pt[1]), 1)],
                 "ear_apex_px": [round(float(ear_apex_pt[0]), 1), round(float(ear_apex_pt[1]), 1)],
+                "otobasion_superius_px": [round(float(ear_apex_pt[0]), 1), round(float(ear_apex_pt[1]), 1)],
                 "eye_center_px": [round(float(eye_iris_pt[0]), 1), round(float(eye_iris_pt[1]), 1)],
                 "nose_tip_px": [round(float(nose_tip_pt[0]), 1), round(float(nose_tip_pt[1]), 1)],
                 "glabella_px": [round(float(glabella_pt[0]), 1), round(float(glabella_pt[1]), 1)],
@@ -435,15 +442,27 @@ class SideProfileAnalyzer:
             "measurements": {
                 "eye_to_ear_distance_px": round(eye_to_ear_px, 1),
                 "eye_to_ear_distance_mm": eye_to_ear_mm,
+                "temple_arm_fit_reach_mm": estimated_temple_length_mm,
                 "estimated_temple_length_mm": estimated_temple_length_mm,
-                "profile_height_mm": profile_height_mm,
-                "nose_bridge_mm": nose_bridge_mm,
+                "hinge_to_apex_distance_mm": hinge_to_apex_mm,
                 "hinge_to_apex_mm": hinge_to_apex_mm,
+                "profile_height_mm": profile_height_mm,
+                "nose_bridge_profile_mm": nose_bridge_mm,
+                "nose_bridge_mm": nose_bridge_mm,
+                "scale_calibration": "Calibrated" if is_calibrated else "Uncalibrated",
                 "temple_geometry_note": "Facial reach estimate only. Actual frame temple length requires manufacturer product specifications.",
                 "measurement_type": "calibrated_physical_mm" if is_calibrated else "uncalibrated_px",
                 "calibration_source": "front_view_iris" if is_calibrated else "uncalibrated"
             },
+            "landmark_status": {
+                "outer_eye_corner": "Detected",
+                "tragus_reference": "Detected",
+                "otobasion_ear_apex": "Detected",
+                "nose_bridge_profile": "Detected",
+                "profile_height": "Detected"
+            },
             "annotated_image": f"data:image/jpeg;base64,{annotated_b64}",
+            "clean_image": f"data:image/jpeg;base64,{clean_b64}",
             "quality": {
                 "status": "valid",
                 "reasons": []

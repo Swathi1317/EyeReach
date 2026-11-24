@@ -22,12 +22,12 @@ from backend.ml.face_shape_classifier import face_shape_classifier, Anthropometr
 
 client = TestClient(app)
 
-TARGET_CLASSES = ["Heart", "Oblong", "Oval", "Round", "Square"]
+TARGET_CLASSES = ["Diamond", "Heart", "Oblong", "Oval", "Round", "Square"]
 SAMPLE_IMAGE_PATH = "D:/SmartframeAi/Data/Working_Dataset/Oval/IMG-20261027-WA0003.jpg.jpeg"
 
 
 def test_single_frame_endpoint_backwards_compatible():
-    """Verify single image upload returns all expected fields."""
+    """Verify single image upload returns all expected fields with 6 face shape classes."""
     if not os.path.exists(SAMPLE_IMAGE_PATH):
         pytest.skip(f"Sample image not found: {SAMPLE_IMAGE_PATH}")
 
@@ -42,10 +42,20 @@ def test_single_frame_endpoint_backwards_compatible():
     data = response.json()
     assert data["face_shape"] in TARGET_CLASSES
     assert data["confidence"] > 0.0
-    assert len(data["top_predictions"]) == 5
+    assert len(data["top_predictions"]) == 6
+    for pred in data["top_predictions"]:
+        assert pred["shape"] in TARGET_CLASSES
+        assert "probability" in pred
     assert data["frames_evaluated"] == 1
     assert "features" in data
     assert "measurements" in data
+    # Verify normalized proportions and jawline description are present
+    m = data["measurements"]
+    assert "face_length_to_width_ratio" in m
+    assert "forehead_width_relative" in m
+    assert "cheekbone_width_relative" in m
+    assert "jaw_width_relative" in m
+    assert "jawline_description" in m
     assert "explanation" in data
     assert "stability" in data
 
@@ -66,6 +76,7 @@ def test_multi_frame_endpoint():
     data = response.json()
     assert data["face_shape"] in TARGET_CLASSES
     assert data["confidence"] > 0.0
+    assert len(data["top_predictions"]) == 6
     assert data["frames_evaluated"] == 5
     assert data["stability"] in ["high", "moderate"]
     assert "explanation" in data
@@ -139,7 +150,7 @@ def test_repeatability_across_repeated_scans():
 
 
 def test_anthropometric_prior_scoring():
-    """Verify AnthropometricFaceShapeScorer produces valid normalized probability distributions."""
+    """Verify AnthropometricFaceShapeScorer produces valid normalized probability distributions across all 6 classes."""
     sample_features = {
         "face_length_to_cheekbone_width": 1.28,  # long -> Oblong
         "jaw_width_to_cheekbone_width": 0.94,
@@ -149,10 +160,39 @@ def test_anthropometric_prior_scoring():
         "avg_jaw_angle": 143.0,
         "chin_angle": 84.0,
         "cheekbone_to_jaw_taper": 0.05,
+        "forehead_height_ratio": 0.35,
+        "lower_face_to_mid_face_ratio": 1.0,
         "contour_curvature": 0.088
     }
     scores = AnthropometricFaceShapeScorer.compute_scores(sample_features)
-    assert len(scores) == 5
+    assert len(scores) == 6
     assert abs(sum(scores.values()) - 1.0) < 1e-4
     # Oblong should have the highest prior for an elongated face (L/W = 1.28)
     assert scores["Oblong"] == max(scores.values())
+
+
+def test_diamond_anthropometric_prior_and_classification():
+    """Verify Diamond face shape geometric prior and classification when cheekbones are prominent and forehead/jaw narrow."""
+    diamond_features = {
+        "face_length_to_cheekbone_width": 1.42,
+        "jaw_width_to_cheekbone_width": 0.72,       # narrow jaw
+        "forehead_width_to_cheekbone_width": 0.78,  # narrow forehead (key differentiator from Heart)
+        "jaw_width_to_forehead_width": 0.92,
+        "chin_width_to_jaw_width": 0.35,
+        "avg_jaw_angle": 138.0,
+        "chin_angle": 72.0,                         # pointed chin
+        "cheekbone_to_jaw_taper": 0.28,             # dramatic taper
+        "forehead_height_ratio": 0.35,
+        "lower_face_to_mid_face_ratio": 0.95,
+        "contour_curvature": 0.085
+    }
+    scores = AnthropometricFaceShapeScorer.compute_scores(diamond_features)
+    assert len(scores) == 6
+    assert scores["Diamond"] == max(scores.values()), f"Diamond should score highest for narrow forehead + jaw with wide cheekbones. Scores: {scores}"
+
+    # Verify predict_hybrid classifies Diamond
+    result = face_shape_classifier.predict_hybrid(diamond_features, frames_evaluated=1)
+    assert result["face_shape"] == "Diamond"
+    assert len(result["top_predictions"]) == 6
+    diamond_pred = next(p for p in result["top_predictions"] if p["shape"] == "Diamond")
+    assert diamond_pred["probability"] > 0.30

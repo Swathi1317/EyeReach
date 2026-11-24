@@ -91,7 +91,39 @@ class FaceFeatureExtractor:
         
         return self._compute_features(coords)
     
-    def _compute_features(self, coords: np.ndarray) -> Dict[str, float]:
+    @staticmethod
+    def align_landmarks(coords: np.ndarray) -> np.ndarray:
+        """
+        Align facial coordinates to horizontal eye level (zero roll angle)
+        and vertical facial symmetry axis.
+        Prevents head-tilt and pose distortion from altering landmark width/length measurements.
+        """
+        if coords is None or len(coords) < 454:
+            return coords
+
+        # Outer eye corners: 33 (anatomical right) and 263 (anatomical left)
+        right_eye = coords[33]
+        left_eye = coords[263]
+        dx = float(left_eye[0] - right_eye[0])
+        dy = float(left_eye[1] - right_eye[1])
+        roll_angle = math.atan2(dy, dx)
+
+        # Center of rotation at the midpoint between eyes
+        center = (right_eye + left_eye) / 2.0
+
+        # Rotate coordinates by -roll_angle
+        cos_a = math.cos(-roll_angle)
+        sin_a = math.sin(-roll_angle)
+        R = np.array([[cos_a, -sin_a], [sin_a, cos_a]])
+
+        shifted = coords - center
+        aligned = np.dot(shifted, R.T) + center
+        return aligned
+
+    def _compute_features(self, coords: np.ndarray) -> Optional[Dict[str, float]]:
+        # Align coordinates to eliminate roll/tilt errors
+        coords = self.align_landmarks(coords)
+
         # Helper for euclidean distance
         def dist(p1, p2):
             return np.linalg.norm(p1 - p2)
@@ -104,11 +136,14 @@ class FaceFeatureExtractor:
             cos_theta = np.clip(cos_theta, -1.0, 1.0)
             return math.degrees(math.acos(cos_theta))
         
-        # Dimensions
+        # Dimensions on aligned facial coordinates
         cheekbone_width = dist(coords[L_CHEEK], coords[R_CHEEK])
         jaw_width = dist(coords[L_JAW], coords[R_JAW])
         forehead_width = dist(coords[L_FOREHEAD], coords[R_FOREHEAD])
-        face_length = dist(coords[TOP_FOREHEAD], coords[CHIN])
+        # Face length along vertical symmetry axis
+        face_length = abs(float(coords[CHIN][1] - coords[TOP_FOREHEAD][1]))
+        if face_length < 1e-4:
+            face_length = dist(coords[TOP_FOREHEAD], coords[CHIN])
         chin_width = dist(coords[43], coords[273]) # Approximation of chin width using lower lip/chin landmarks
         
         if cheekbone_width < 1e-6 or jaw_width < 1e-6 or forehead_width < 1e-6:

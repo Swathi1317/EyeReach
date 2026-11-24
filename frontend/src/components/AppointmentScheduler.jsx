@@ -13,6 +13,7 @@ import {
   AlertCircle, 
   ArrowLeft, 
   RotateCcw, 
+  RotateCw, 
   Sparkles, 
   Eye, 
   Home, 
@@ -264,7 +265,7 @@ export default function AppointmentScheduler({
     }
 
     if (selectedFrameIds.size === 0) {
-      setErrorMessage('Please select at least 1 spectacle frame (maximum 10 frames) for the doctor/optometrist to bring to your home.');
+      setErrorMessage('Please select at least 1 spectacle frame (maximum 10 frames) for the optical shop optometrist to bring to your home.');
       return;
     }
 
@@ -321,6 +322,9 @@ export default function AppointmentScheduler({
 
       const res = await axios.post(`${API_BASE}/api/appointments`, payload);
       setConfirmationData(res.data);
+      if (res.data?.appointment_id) {
+        localStorage.setItem('eyereach_last_appointment_id', res.data.appointment_id);
+      }
     } catch (err) {
       console.error('Error submitting appointment:', err);
       const detail = err.response?.data?.detail;
@@ -333,6 +337,38 @@ export default function AppointmentScheduler({
       setSubmitting(false);
     }
   };
+
+  const [checkingStatus, setCheckingStatus] = useState(false);
+  const handleRefreshStatus = async () => {
+    if (!confirmationData?.appointment_id) return;
+    setCheckingStatus(true);
+    try {
+      const res = await axios.get(`${API_BASE}/api/appointments/${confirmationData.appointment_id}`);
+      if (res.data) {
+        setConfirmationData(res.data);
+      }
+    } catch (err) {
+      console.error('Error refreshing appointment status:', err);
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
+  // Real-time polling while appointment is Pending doctor review (Requirement 4)
+  useEffect(() => {
+    if (!confirmationData?.appointment_id || confirmationData?.status !== 'Pending') return;
+    const timer = setInterval(async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/api/appointments/${confirmationData.appointment_id}`);
+        if (res.data && res.data.status !== confirmationData.status) {
+          setConfirmationData(res.data);
+        }
+      } catch (err) {
+        // silent polling catch
+      }
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [confirmationData?.appointment_id, confirmationData?.status]);
 
   const handleCopyAppointmentId = () => {
     if (confirmationData?.appointment_id) {
@@ -453,7 +489,11 @@ export default function AppointmentScheduler({
           }}>
             {/* Header banner */}
             <div style={{
-              background: 'linear-gradient(135deg, #0d9488 0%, #0284c7 100%)',
+              background: confirmationData.status === 'Confirmed'
+                ? 'linear-gradient(135deg, #059669 0%, #0d9488 100%)'
+                : confirmationData.status === 'Rejected'
+                ? 'linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)'
+                : 'linear-gradient(135deg, #0284c7 0%, #0d9488 100%)',
               color: '#ffffff',
               padding: '2.5rem 2rem',
               textAlign: 'center'
@@ -470,13 +510,27 @@ export default function AppointmentScheduler({
                 margin: '0 auto 1rem',
                 border: '2px solid rgba(255, 255, 255, 0.4)'
               }}>
-                <CheckCircle2 size={36} color="#ffffff" />
+                {confirmationData.status === 'Confirmed' ? (
+                  <CheckCircle2 size={36} color="#ffffff" />
+                ) : confirmationData.status === 'Rejected' ? (
+                  <AlertCircle size={36} color="#ffffff" />
+                ) : (
+                  <Clock size={36} color="#ffffff" />
+                )}
               </div>
               <h2 style={{ fontSize: '1.6rem', fontWeight: 800, margin: '0 0 0.5rem' }}>
-                Your appointment request has been submitted successfully!
+                {confirmationData.status === 'Confirmed'
+                  ? 'Your appointment has been confirmed by the doctor!'
+                  : confirmationData.status === 'Rejected'
+                  ? 'Appointment Rejected'
+                  : 'Your appointment request is pending doctor review'}
               </h2>
               <p style={{ margin: 0, opacity: 0.9, fontSize: '0.95rem', maxWidth: '560px', marginInline: 'auto' }}>
-                Thank you, {confirmationData.full_name}. Your appointment details and biometric facial analysis have been recorded and sent to the attending doctor's schedule.
+                {confirmationData.status === 'Confirmed'
+                  ? `Thank you, ${confirmationData.full_name}. The attending doctor has reviewed and confirmed your appointment.`
+                  : confirmationData.status === 'Rejected'
+                  ? `Your appointment request was declined by the clinic. Please choose another date or contact our team.`
+                  : `Thank you, ${confirmationData.full_name}. Your appointment is currently Pending doctor review. Once the doctor approves, it will be marked as Confirmed.`}
               </p>
             </div>
 
@@ -566,52 +620,77 @@ export default function AppointmentScheduler({
                     </div>
                   </div>
 
-                  {confirmationData.status === 'Pending' ? (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: '#fef3c7',
-                      color: '#b45309',
-                      padding: '6px 14px',
-                      borderRadius: '999px',
-                      fontWeight: 700,
-                      fontSize: '0.85rem'
-                    }}>
-                      <Clock size={15} />
-                      Pending Doctor Review
-                    </span>
-                  ) : confirmationData.status === 'Rejected' ? (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: '#fee2e2',
-                      color: '#b91c1c',
-                      padding: '6px 14px',
-                      borderRadius: '999px',
-                      fontWeight: 700,
-                      fontSize: '0.85rem'
-                    }}>
-                      <AlertCircle size={15} />
-                      Rejected
-                    </span>
-                  ) : (
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      backgroundColor: '#dcfce7',
-                      color: '#15803d',
-                      padding: '6px 14px',
-                      borderRadius: '999px',
-                      fontWeight: 700,
-                      fontSize: '0.85rem'
-                    }}>
-                      <CheckCircle2 size={15} />
-                      {confirmationData.status}
-                    </span>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      onClick={handleRefreshStatus}
+                      disabled={checkingStatus}
+                      style={{
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '20px',
+                        padding: '5px 12px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: checkingStatus ? 'not-allowed' : 'pointer',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                      }}
+                      title="Refresh status from clinic database"
+                    >
+                      <RotateCw size={13} style={{ animation: checkingStatus ? 'spin 1s linear infinite' : 'none' }} />
+                      <span>{checkingStatus ? 'Checking...' : 'Check Status'}</span>
+                    </button>
+
+                    {confirmationData.status === 'Pending' ? (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#fef3c7',
+                        color: '#b45309',
+                        padding: '6px 14px',
+                        borderRadius: '999px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem'
+                      }}>
+                        <Clock size={15} />
+                        Pending Doctor Review
+                      </span>
+                    ) : confirmationData.status === 'Rejected' ? (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#fee2e2',
+                        color: '#b91c1c',
+                        padding: '6px 14px',
+                        borderRadius: '999px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem'
+                      }}>
+                        <AlertCircle size={15} />
+                        Rejected
+                      </span>
+                    ) : (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#dcfce7',
+                        color: '#15803d',
+                        padding: '6px 14px',
+                        borderRadius: '999px',
+                        fontWeight: 700,
+                        fontSize: '0.85rem'
+                      }}>
+                        <CheckCircle2 size={15} />
+                        Confirmed
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{

@@ -2,7 +2,7 @@ import hashlib
 import os
 from sqlalchemy import text
 from .database import engine, Base, SessionLocal
-from .models import Shop, Customer, Product, Order, Appointment, CustomerFramePick, Doctor, FrameView
+from .models import Shop, Customer, Product, Order, Appointment, CustomerFramePick, Doctor, FrameView, CartItem, CustomerNotification
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
@@ -22,6 +22,22 @@ def ensure_schema_migrations():
                     conn.execute(text("ALTER TABLE appointments ADD COLUMN doctor_id INTEGER;"))
                 if "doctor_notes" not in cols:
                     conn.execute(text("ALTER TABLE appointments ADD COLUMN doctor_notes TEXT;"))
+                if "service_type" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN service_type VARCHAR(50) DEFAULT 'both';"))
+                if "shop_id" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN shop_id INTEGER;"))
+                if "has_prescription" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN has_prescription BOOLEAN DEFAULT 0;"))
+                if "prescription_file" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN prescription_file VARCHAR(500);"))
+                if "prescription_data_json" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN prescription_data_json TEXT;"))
+                if "final_selected_frame_id" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN final_selected_frame_id VARCHAR(100);"))
+                if "rejection_reason" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN rejection_reason TEXT;"))
+                if "visit_status" not in cols:
+                    conn.execute(text("ALTER TABLE appointments ADD COLUMN visit_status VARCHAR(50) DEFAULT 'Pending';"))
 
                 # 2. Products migrations
                 p_res = conn.execute(text("PRAGMA table_info(products);")).fetchall()
@@ -30,6 +46,42 @@ def ensure_schema_migrations():
                     conn.execute(text("ALTER TABLE products ADD COLUMN view_count INTEGER DEFAULT 0;"))
                 if "selection_count" not in p_cols:
                     conn.execute(text("ALTER TABLE products ADD COLUMN selection_count INTEGER DEFAULT 0;"))
+
+                # 3. Shops migrations
+                s_res = conn.execute(text("PRAGMA table_info(shops);")).fetchall()
+                s_cols = [r[1] for r in s_res]
+                if "operating_hours" not in s_cols:
+                    conn.execute(text("ALTER TABLE shops ADD COLUMN operating_hours VARCHAR(200) DEFAULT '09:00 AM - 08:00 PM, Mon-Sat';"))
+                if "home_visit_available" not in s_cols:
+                    conn.execute(text("ALTER TABLE shops ADD COLUMN home_visit_available BOOLEAN DEFAULT 1;"))
+
+                # 4. Orders migrations
+                o_res = conn.execute(text("PRAGMA table_info(orders);")).fetchall()
+                o_cols = [r[1] for r in o_res]
+                if "customer_address" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN customer_address TEXT;"))
+                if "prescription_url" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN prescription_url VARCHAR(500);"))
+                if "prescription_text" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN prescription_text TEXT;"))
+                if "has_prescription" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN has_prescription BOOLEAN DEFAULT 0;"))
+                if "is_home_trial" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN is_home_trial BOOLEAN DEFAULT 0;"))
+                if "is_vision_test_required" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN is_vision_test_required BOOLEAN DEFAULT 0;"))
+                if "rejection_reason" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN rejection_reason TEXT;"))
+
+                # 5. Doctors migrations
+                d_res = conn.execute(text("PRAGMA table_info(doctors);")).fetchall()
+                d_cols = [r[1] for r in d_res]
+                if "available_days" not in d_cols:
+                    conn.execute(text("ALTER TABLE doctors ADD COLUMN available_days VARCHAR(200) DEFAULT 'Mon,Tue,Wed,Thu,Fri,Sat';"))
+                if "available_hours" not in d_cols:
+                    conn.execute(text("ALTER TABLE doctors ADD COLUMN available_hours VARCHAR(100) DEFAULT '09:00 AM - 06:00 PM';"))
+                if "is_available" not in d_cols:
+                    conn.execute(text("ALTER TABLE doctors ADD COLUMN is_available BOOLEAN DEFAULT 1;"))
 
                 conn.commit()
         except Exception as e:
