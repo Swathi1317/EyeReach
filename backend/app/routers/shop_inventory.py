@@ -76,6 +76,34 @@ class OrderStatusUpdate(BaseModel):
 
 @router.get("/dashboard/stats")
 def get_dashboard_stats(current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    # Restrict optometrist role from viewing store commercial revenue or products
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        opt_id = getattr(current_shop, "_optometrist_id", None)
+        assigned_vts = db.query(Appointment).filter(Appointment.doctor_id == opt_id, Appointment.service_type.in_(["vision_test", "both"])).count()
+        assigned_trials = db.query(Appointment).filter(Appointment.doctor_id == opt_id, Appointment.service_type == "frame_trial").count()
+        completed = db.query(Appointment).filter(Appointment.doctor_id == opt_id, Appointment.status == "Completed").count()
+        return {
+            "shop_name": current_shop.shop_name,
+            "owner_name": current_shop.owner_name,
+            "caller_role": "optometrist",
+            "total_products": 0,
+            "total_frames": 0,
+            "available_stock": 0,
+            "out_of_stock_products": 0,
+            "total_customers": 0,
+            "total_orders": 0,
+            "sales_overview": {
+                "total_revenue": 0.0,
+                "currency": "₹",
+                "recent_orders_count": 0
+            },
+            "product_categories": {},
+            "recent_orders": [],
+            "assigned_vision_tests": assigned_vts,
+            "assigned_home_trials": assigned_trials,
+            "completed_appointments": completed
+        }
+
     products = db.query(Product).filter(Product.shop_id == current_shop.id).all()
     
     total_products = len(products)
@@ -314,6 +342,8 @@ def delete_shop_product(id: int, current_shop: Shop = Depends(get_current_shop),
 
 @router.patch("/products/{id}/price")
 def update_product_price(id: int, req: PriceUpdate, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Optometrist accounts are restricted from modifying shop inventory.")
     product = db.query(Product).filter(Product.id == id, Product.shop_id == current_shop.id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found.")
@@ -323,6 +353,8 @@ def update_product_price(id: int, req: PriceUpdate, current_shop: Shop = Depends
 
 @router.patch("/products/{id}/stock")
 def update_product_stock(id: int, req: StockUpdate, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Optometrist accounts are restricted from modifying shop inventory.")
     product = db.query(Product).filter(Product.id == id, Product.shop_id == current_shop.id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found.")
@@ -382,6 +414,8 @@ async def bulk_upload_frames(
     current_shop: Shop = Depends(get_current_shop),
     db: Session = Depends(get_db)
 ):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Optometrist accounts are restricted from modifying shop inventory.")
     filename = file.filename.lower()
     contents = await file.read()
     
@@ -562,6 +596,8 @@ async def bulk_upload_frames(
 
 @router.get("/orders")
 def list_shop_orders(current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Optometrist accounts are restricted from viewing shop commercial orders.")
     orders = db.query(Order).filter(Order.shop_id == current_shop.id).order_by(Order.created_at.desc()).all()
     return [
         {
@@ -599,6 +635,8 @@ def list_shop_orders(current_shop: Shop = Depends(get_current_shop), db: Session
 
 @router.patch("/orders/{id}/status")
 def update_order_status(id: int, req: OrderStatusUpdate, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Optometrist accounts are restricted from modifying customer orders.")
     order = db.query(Order).filter(Order.id == id, Order.shop_id == current_shop.id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found.")
@@ -637,7 +675,9 @@ def update_order_status(id: int, req: OrderStatusUpdate, current_shop: Shop = De
     }
 
 @router.get("/customers")
-def list_shop_customers(db: Session = Depends(get_db)):
+def list_shop_customers(current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Optometrist accounts are restricted from accessing customer database.")
     customers = db.query(Customer).order_by(Customer.created_at.desc()).all()
     return [
         {
@@ -778,8 +818,10 @@ def add_shop_optometrist(req: DoctorCreateRequest, current_shop: Shop = Depends(
     return add_shop_doctor(req, current_shop, db)
 
 @router.put("/appointments/{id}/assign")
-def assign_appointment_doctor(id: int, req: AppointmentAssignRequest, db: Session = Depends(get_db)):
+def assign_appointment_doctor(id: int, req: AppointmentAssignRequest, current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
     """Owner assigns/reassigns an appointment to a linked doctor."""
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Only optical store owners can assign optometrists.")
     appt = db.query(Appointment).filter(Appointment.id == id).first()
     if not appt:
         raise HTTPException(status_code=404, detail="Appointment not found.")
@@ -1034,11 +1076,17 @@ def helper_enrich_frame(f_dict_or_id, db: Session):
 def list_shop_home_trials(current_shop: Shop = Depends(get_current_shop), db: Session = Depends(get_db)):
     """
     Receive and view customer home trial requests with up to 10 selected frames, customer preferences (wishlist, cart), address, requested date/time.
+    Optometrists can view only their assigned home trials.
     """
-    appts = db.query(Appointment).filter(
+    query = db.query(Appointment).filter(
         (Appointment.shop_id == current_shop.id) | (Appointment.shop_id == None if current_shop.id == 1 else False),
         Appointment.appointment_type == "home_testing"
-    ).order_by(Appointment.id.desc()).all()
+    )
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        opt_id = getattr(current_shop, "_optometrist_id", None)
+        query = query.filter(Appointment.doctor_id == opt_id)
+
+    appts = query.order_by(Appointment.id.desc()).all()
 
     results = []
     for a in appts:
@@ -1255,6 +1303,8 @@ def assign_home_trial_optometrist(
     current_shop: Shop = Depends(get_current_shop),
     db: Session = Depends(get_db)
 ):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Only optical store owners can assign optometrists.")
     appt = db.query(Appointment).filter(
         Appointment.id == id,
         (Appointment.shop_id == current_shop.id) | (Appointment.shop_id == None if current_shop.id == 1 else False)
@@ -1419,11 +1469,17 @@ def list_shop_vision_tests(current_shop: Shop = Depends(get_current_shop), db: S
     """
     List vision test appointment requests for this optical store.
     Shows whether customer entered existing prescription vs requested in-person exam.
+    Optometrists can view only their assigned vision tests.
     """
-    appts = db.query(Appointment).filter(
+    query = db.query(Appointment).filter(
         (Appointment.shop_id == current_shop.id) | (Appointment.shop_id == None),
         Appointment.appointment_type == "home_testing"
-    ).order_by(Appointment.id.desc()).all()
+    )
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        opt_id = getattr(current_shop, "_optometrist_id", None)
+        query = query.filter(Appointment.doctor_id == opt_id)
+
+    appts = query.order_by(Appointment.id.desc()).all()
 
     results = []
     for a in appts:
@@ -1466,6 +1522,8 @@ def assign_vision_test_optometrist(
     current_shop: Shop = Depends(get_current_shop),
     db: Session = Depends(get_db)
 ):
+    if getattr(current_shop, "_caller_role", None) == "optometrist":
+        raise HTTPException(status_code=403, detail="Only optical store owners can assign optometrists.")
     appt = db.query(Appointment).filter(
         Appointment.id == id,
         (Appointment.shop_id == current_shop.id) | (Appointment.shop_id == None)
@@ -1575,6 +1633,7 @@ def record_confirmed_prescription(
 class VisionTestStatusUpdateRequest(BaseModel):
     status: str
     notes: Optional[str] = None
+    rejection_reason: Optional[str] = None
 
 @router.put("/vision-tests/{id}/status")
 def update_vision_test_status(
@@ -1585,7 +1644,7 @@ def update_vision_test_status(
 ):
     """
     Optometrist or Optical Shop Owner updates examination status
-    (e.g. 'In Progress', 'Completed', 'Cancelled').
+    (e.g. 'Approved', 'Rejected', 'Scheduled', 'In Progress', 'Completed', 'Cancelled').
     """
     appt = db.query(Appointment).filter(
         Appointment.id == id,
@@ -1595,19 +1654,34 @@ def update_vision_test_status(
         raise HTTPException(status_code=404, detail="Vision test appointment not found.")
 
     appt.visit_status = req.status
-    if req.status in ["Completed", "Cancelled"]:
+    if req.status in ["Approved", "Accepted"]:
+        appt.status = "Confirmed"
+    elif req.status in ["Rejected"]:
+        appt.status = "Rejected"
+        if req.rejection_reason:
+            appt.rejection_reason = req.rejection_reason.strip()
+    elif req.status in ["Completed", "Cancelled", "Confirmed", "In Progress", "Rescheduled"]:
         appt.status = req.status
+
     if req.notes:
         appt.doctor_notes = req.notes
+    if req.rejection_reason:
+        appt.rejection_reason = req.rejection_reason.strip()
 
     clean_mob = appt.mobile_number[-10:] if appt.mobile_number else ""
     cust = db.query(Customer).filter((Customer.mobile.endswith(clean_mob)) | (Customer.email == appt.email)).first()
     if cust:
+        msg = f"Your home vision test appointment #{appt.appointment_id} status has been updated to '{req.status}'."
+        if req.status == "Rejected" and appt.rejection_reason:
+            msg = f"Your home vision test appointment #{appt.appointment_id} was declined by {current_shop.shop_name}. Reason: {appt.rejection_reason}."
+        elif req.status in ["Approved", "Accepted"]:
+            msg = f"Your home vision test appointment #{appt.appointment_id} for {appt.appointment_date} at {appt.appointment_time} has been approved by {current_shop.shop_name}."
+
         notif = CustomerNotification(
             customer_id=cust.id,
             shop_id=current_shop.id,
             title=f"Vision Test: {req.status}",
-            message=f"Your home vision test appointment #{appt.appointment_id} status has been updated to '{req.status}'.",
+            message=msg,
             notification_type="vision_test",
             reference_id=appt.appointment_id
         )
@@ -1618,5 +1692,7 @@ def update_vision_test_status(
         "status": "success",
         "message": f"Vision test appointment #{appt.appointment_id} status updated to '{req.status}'.",
         "appointment_id": appt.appointment_id,
-        "visit_status": appt.visit_status
+        "visit_status": appt.visit_status,
+        "status": appt.status,
+        "rejection_reason": appt.rejection_reason
     }

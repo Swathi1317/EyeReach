@@ -140,6 +140,120 @@ export default function CustomerPortal({
   const [homeServiceSubmitting, setHomeServiceSubmitting] = useState(false);
   const [homeServiceMsg, setHomeServiceMsg] = useState(null);
 
+  // Dynamic Available Slots & Rescheduling/Cancellation State (Mentor Requirement 5)
+  const [availableSlots, setAvailableSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [rescheduleModalAppt, setRescheduleModalAppt] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('10:30 AM');
+  const [rescheduleSlots, setRescheduleSlots] = useState([]);
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [cancelModalAppt, setCancelModalAppt] = useState(null);
+  const [cancelling, setCancelling] = useState(false);
+  const [personalizedSuggestions, setPersonalizedSuggestions] = useState([]);
+
+  const fetchAvailableSlots = async (targetDate) => {
+    if (!targetDate) return;
+    setLoadingSlots(true);
+    try {
+      const res = await axios.get(`/api/customer/available-slots?date=${targetDate}&shop_id=${selectedShopId || ''}`);
+      if (res.data?.slots) {
+        setAvailableSlots(res.data.slots);
+        const avail = res.data.slots.find(s => s.is_available);
+        if (avail && !res.data.slots.some(s => s.slot_time === homeServiceForm.appointment_time && s.is_available)) {
+          setHomeServiceForm(prev => ({ ...prev, appointment_time: avail.slot_time }));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load dynamic slots:', err);
+    } finally {
+      setLoadingSlots(false);
+    }
+  };
+
+  const fetchRescheduleSlots = async (targetDate, shopId) => {
+    if (!targetDate) return;
+    try {
+      const res = await axios.get(`/api/customer/available-slots?date=${targetDate}&shop_id=${shopId || ''}`);
+      if (res.data?.slots) {
+        setRescheduleSlots(res.data.slots);
+        const avail = res.data.slots.find(s => s.is_available);
+        if (avail && !res.data.slots.some(s => s.slot_time === rescheduleTime && s.is_available)) {
+          setRescheduleTime(avail.slot_time);
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to load reschedule slots:', err);
+    }
+  };
+
+  const handleCancelAppointment = async (apptId) => {
+    if (!apptId) return;
+    setCancelling(true);
+    try {
+      await axios.put(`/api/customer/appointments/${apptId}/cancel`, { reason: 'Cancelled by customer from portal' });
+      alert('Your appointment has been cancelled successfully.');
+      setCancelModalAppt(null);
+      fetchCustomerAppointment();
+      fetchNotifications();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to cancel appointment.');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleRescheduleSubmit = async (e) => {
+    e.preventDefault();
+    if (!rescheduleModalAppt || !rescheduleDate || !rescheduleTime) return;
+    setRescheduleLoading(true);
+    try {
+      await axios.put(`/api/customer/appointments/${rescheduleModalAppt.id}/reschedule`, {
+        new_date: rescheduleDate,
+        new_time: rescheduleTime,
+        reason: 'Rescheduled by customer from portal'
+      });
+      alert(`Appointment successfully rescheduled to ${rescheduleDate} at ${rescheduleTime}!`);
+      setRescheduleModalAppt(null);
+      fetchCustomerAppointment();
+      fetchNotifications();
+    } catch (err) {
+      alert(err.response?.data?.detail || 'Failed to reschedule appointment. The slot may be fully booked.');
+    } finally {
+      setRescheduleLoading(false);
+    }
+  };
+
+  const fetchPersonalizedSuggestions = async () => {
+    try {
+      const params = {};
+      if (customerUser?.mobile) params.customer_mobile = customerUser.mobile;
+      const res = await axios.get('/api/customer/personalized-suggestions', { params });
+      if (res.data?.suggestions) {
+        setPersonalizedSuggestions(res.data.suggestions);
+      }
+    } catch (err) {
+      console.warn('Failed to load personalized suggestions:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPersonalizedSuggestions();
+  }, [customerUser?.mobile]);
+
+  useEffect(() => {
+    if (showHomeServicesModal) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const targetDate = homeServiceForm.appointment_date || tomorrowStr;
+      if (!homeServiceForm.appointment_date) {
+        setHomeServiceForm(prev => ({ ...prev, appointment_date: tomorrowStr }));
+      }
+      fetchAvailableSlots(targetDate);
+    }
+  }, [showHomeServicesModal]);
+
   // Prescription View Modal
   const [selectedPrescriptionView, setSelectedPrescriptionView] = useState(null);
 
@@ -1338,42 +1452,66 @@ export default function CustomerPortal({
                       fontWeight: 800,
                       color: appt.status === 'Confirmed'
                         ? '#15803d'
-                        : appt.status === 'Rejected'
-                          ? '#b91c1c'
-                          : '#0369a1'
+                        : appt.status === 'Rescheduled'
+                          ? '#0284c7'
+                          : appt.status === 'Cancelled'
+                            ? '#64748b'
+                            : appt.status === 'Rejected'
+                              ? '#b91c1c'
+                              : '#0369a1'
                     }}>
                       {appt.status === 'Confirmed'
                         ? 'Your home appointment has been confirmed!'
-                        : appt.status === 'Rejected'
-                          ? 'Appointment Request Declined'
-                          : 'Your doorstep service request is pending optical shop confirmation'}
+                        : appt.status === 'Rescheduled'
+                          ? 'Your appointment has been rescheduled'
+                          : appt.status === 'Cancelled'
+                            ? 'Appointment Cancelled'
+                            : appt.status === 'Rejected'
+                              ? 'Appointment Request Declined'
+                              : 'Your doorstep service request is pending optical shop confirmation'}
                     </span>
                     <span style={{
                       backgroundColor: appt.status === 'Confirmed'
                         ? '#dcfce7'
-                        : appt.status === 'Rejected'
-                          ? '#fee2e2'
-                          : '#fef3c7',
+                        : appt.status === 'Rescheduled'
+                          ? '#e0f2fe'
+                          : appt.status === 'Cancelled'
+                            ? '#f1f5f9'
+                            : appt.status === 'Rejected'
+                              ? '#fee2e2'
+                              : '#fef3c7',
                       color: appt.status === 'Confirmed'
                         ? '#15803d'
-                        : appt.status === 'Rejected'
-                          ? '#b91c1c'
-                          : '#b45309',
+                        : appt.status === 'Rescheduled'
+                          ? '#0284c7'
+                          : appt.status === 'Cancelled'
+                            ? '#64748b'
+                            : appt.status === 'Rejected'
+                              ? '#b91c1c'
+                              : '#b45309',
                       fontSize: '0.72rem',
                       fontWeight: 700,
                       padding: '2px 9px',
                       borderRadius: '999px',
                       border: appt.status === 'Confirmed'
                         ? '1px solid #bbf7d0'
-                        : appt.status === 'Rejected'
-                          ? '1px solid #fecaca'
-                          : '1px solid #fde68a'
+                        : appt.status === 'Rescheduled'
+                          ? '1px solid #bae6fd'
+                          : appt.status === 'Cancelled'
+                            ? '1px solid #cbd5e1'
+                            : appt.status === 'Rejected'
+                              ? '1px solid #fecaca'
+                              : '1px solid #fde68a'
                     }}>
                       {appt.status === 'Confirmed'
                         ? '✓ Confirmed'
-                        : appt.status === 'Rejected'
-                          ? '✗ Declined'
-                          : '⏳ Pending Shop Confirmation'}
+                        : appt.status === 'Rescheduled'
+                          ? '↻ Rescheduled'
+                          : appt.status === 'Cancelled'
+                            ? '✗ Cancelled'
+                            : appt.status === 'Rejected'
+                              ? '✗ Declined'
+                              : '⏳ Pending Shop Confirmation'}
                     </span>
                   </div>
 
@@ -1435,6 +1573,59 @@ export default function CustomerPortal({
                   <RotateCw size={13} style={{ animation: refreshingAppointment ? 'spin 1s linear infinite' : 'none' }} />
                   <span>{refreshingAppointment ? 'Checking...' : 'Refresh'}</span>
                 </button>
+
+                {['Pending', 'Confirmed', 'Rescheduled', 'Approved', 'Scheduled'].includes(appt.status) && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRescheduleModalAppt(appt);
+                        setRescheduleDate(appt.appointment_date || new Date().toISOString().split('T')[0]);
+                        setRescheduleTime(appt.appointment_time || '10:30 AM');
+                        fetchRescheduleSlots(appt.appointment_date || new Date().toISOString().split('T')[0], appt.shop_id);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '0.45rem 0.85rem',
+                        background: '#eff6ff',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '8px',
+                        fontSize: '0.80rem',
+                        fontWeight: 700,
+                        color: '#1d4ed8',
+                        cursor: 'pointer'
+                      }}
+                      title="Reschedule appointment date or time"
+                    >
+                      <Calendar size={13} />
+                      <span>Reschedule</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCancelModalAppt(appt)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        padding: '0.45rem 0.85rem',
+                        background: '#fff1f2',
+                        border: '1px solid #fecdd3',
+                        borderRadius: '8px',
+                        fontSize: '0.80rem',
+                        fontWeight: 700,
+                        color: '#e11d48',
+                        cursor: 'pointer'
+                      }}
+                      title="Cancel this appointment"
+                    >
+                      <X size={13} />
+                      <span>Cancel</span>
+                    </button>
+                  </>
+                )}
 
                 <button
                   type="button"
@@ -1723,6 +1914,69 @@ export default function CustomerPortal({
         ) : (
           /* VIEW B: CATALOGUE GRID */
           <div>
+            {/* PERSONALIZED IN-STOCK SUGGESTIONS (Requirement 8) */}
+            {personalizedSuggestions.length > 0 && (
+              <div style={{
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%)',
+                borderRadius: '16px',
+                border: '1px solid #bbf7d0',
+                padding: '1.25rem',
+                marginBottom: '1.5rem',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={18} color="#0d9488" />
+                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                      Personalized In-Stock Picks For You
+                    </h3>
+                    <span style={{ fontSize: '0.70rem', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '999px', fontWeight: 800 }}>
+                      ✓ Strictly In Stock
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    Curated for your facial geometry & style preferences
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap: '12px'
+                }}>
+                  {personalizedSuggestions.slice(0, 4).map(s => (
+                    <div
+                      key={s.id}
+                      onClick={() => setSelectedProductForDetail(s)}
+                      style={{
+                        background: '#ffffff',
+                        borderRadius: '12px',
+                        padding: '0.85rem',
+                        border: '1px solid #e2e8f0',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                      }}
+                    >
+                      <div style={{ height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}>
+                        <img src={s.front_image} alt={s.name} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: '0.80rem', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {s.name}
+                      </div>
+                      <div style={{ fontSize: '0.70rem', color: '#0d9488', fontWeight: 700, margin: '2px 0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {s.match_reason}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#0f172a' }}>₹{s.price}</span>
+                        <span style={{ fontSize: '0.68rem', color: '#15803d', fontWeight: 700 }}>In Stock ({s.stock_quantity})</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div style={{ padding: '4rem', textAlign: 'center', color: '#64748b' }}>
                 Loading optical catalogue...
@@ -2841,25 +3095,39 @@ export default function CustomerPortal({
                     required
                     min={new Date().toISOString().split('T')[0]}
                     value={homeServiceForm.appointment_date}
-                    onChange={(e) => setHomeServiceForm({ ...homeServiceForm, appointment_date: e.target.value })}
+                    onChange={(e) => {
+                      const newD = e.target.value;
+                      setHomeServiceForm({ ...homeServiceForm, appointment_date: newD });
+                      fetchAvailableSlots(newD);
+                    }}
                     style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
-                    Preferred Time Slot *
+                    Preferred Time Slot * {loadingSlots && <span style={{ fontSize: '0.70rem', color: '#0284c7', fontWeight: 500 }}>(Checking optometrists...)</span>}
                   </label>
                   <select
                     value={homeServiceForm.appointment_time}
                     onChange={(e) => setHomeServiceForm({ ...homeServiceForm, appointment_time: e.target.value })}
                     style={{ width: '100%', padding: '0.55rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', background: '#ffffff' }}
                   >
-                    <option value="09:00 AM">09:00 AM - Morning Slot</option>
-                    <option value="10:30 AM">10:30 AM - Morning Slot</option>
-                    <option value="12:00 PM">12:00 PM - Midday Slot</option>
-                    <option value="02:30 PM">02:30 PM - Afternoon Slot</option>
-                    <option value="04:00 PM">04:00 PM - Evening Slot</option>
-                    <option value="05:30 PM">05:30 PM - Evening Slot</option>
+                    {availableSlots.length > 0 ? (
+                      availableSlots.map(s => (
+                        <option key={s.slot_time} value={s.slot_time} disabled={!s.is_available}>
+                          {s.label} {s.is_available ? `(${s.remaining_capacity} available)` : '• FULLY BOOKED'}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="09:00 AM">09:00 AM - Morning Slot</option>
+                        <option value="10:30 AM">10:30 AM - Morning Slot</option>
+                        <option value="12:00 PM">12:00 PM - Midday Slot</option>
+                        <option value="02:30 PM">02:30 PM - Afternoon Slot</option>
+                        <option value="04:00 PM">04:00 PM - Evening Slot</option>
+                        <option value="05:30 PM">05:30 PM - Evening Slot</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
@@ -3570,6 +3838,196 @@ export default function CustomerPortal({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------- APPOINTMENT RESCHEDULING MODAL (Requirement 5) ----------------- */}
+      {rescheduleModalAppt && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '1.75rem',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={20} color="#0284c7" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                  Reschedule Appointment
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRescheduleModalAppt(null)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.84rem' }}>
+              Select a new date and available time slot for appointment #{rescheduleModalAppt.appointment_id}.
+            </p>
+
+            <form onSubmit={handleRescheduleSubmit}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                  New Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  min={new Date().toISOString().split('T')[0]}
+                  value={rescheduleDate}
+                  onChange={(e) => {
+                    const newD = e.target.value;
+                    setRescheduleDate(newD);
+                    fetchRescheduleSlots(newD, rescheduleModalAppt.shop_id);
+                  }}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.80rem', fontWeight: 700, color: '#334155', marginBottom: '4px' }}>
+                  Available Time Slot *
+                </label>
+                <select
+                  value={rescheduleTime}
+                  onChange={(e) => setRescheduleTime(e.target.value)}
+                  style={{ width: '100%', padding: '0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', boxSizing: 'border-box', background: '#ffffff' }}
+                >
+                  {rescheduleSlots.length > 0 ? (
+                    rescheduleSlots.map(s => (
+                      <option key={s.slot_time} value={s.slot_time} disabled={!s.is_available}>
+                        {s.label} {s.is_available ? `(${s.remaining_capacity} available)` : '• FULLY BOOKED'}
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="09:00 AM">09:00 AM - Morning Slot</option>
+                      <option value="10:30 AM">10:30 AM - Morning Slot</option>
+                      <option value="12:00 PM">12:00 PM - Midday Slot</option>
+                      <option value="02:30 PM">02:30 PM - Afternoon Slot</option>
+                      <option value="04:00 PM">04:00 PM - Evening Slot</option>
+                      <option value="05:30 PM">05:30 PM - Evening Slot</option>
+                    </>
+                  )}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="submit"
+                  disabled={rescheduleLoading}
+                  style={{
+                    flex: 1,
+                    padding: '0.7rem',
+                    background: '#0284c7',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    cursor: rescheduleLoading ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  {rescheduleLoading ? 'Confirming...' : 'Confirm Reschedule'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRescheduleModalAppt(null)}
+                  style={{
+                    padding: '0.7rem 1.25rem',
+                    background: '#e2e8f0',
+                    color: '#475569',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------- APPOINTMENT CANCELLATION CONFIRMATION MODAL ----------------- */}
+      {cancelModalAppt && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '440px',
+            width: '100%',
+            padding: '1.75rem',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)'
+          }}>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 800, color: '#b91c1c' }}>
+              Cancel Appointment #{cancelModalAppt.appointment_id}?
+            </h3>
+            <p style={{ margin: '0 0 1.25rem 0', color: '#64748b', fontSize: '0.85rem', lineHeight: 1.45 }}>
+              Are you sure you want to cancel this visit scheduled for <strong>{cancelModalAppt.appointment_date}</strong> at <strong>{cancelModalAppt.appointment_time}</strong>? The reserved optometrist slot will be released back to the store.
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setCancelModalAppt(null)}
+                style={{
+                  padding: '0.65rem 1.15rem',
+                  background: '#f1f5f9',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  fontWeight: 700,
+                  fontSize: '0.82rem',
+                  color: '#475569',
+                  cursor: 'pointer'
+                }}
+              >
+                Keep Appointment
+              </button>
+              <button
+                type="button"
+                disabled={cancelling}
+                onClick={() => handleCancelAppointment(cancelModalAppt.id)}
+                style={{
+                  padding: '0.65rem 1.25rem',
+                  background: '#e11d48',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
+                  cursor: cancelling ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {cancelling ? 'Cancelling...' : 'Confirm Cancellation'}
+              </button>
+            </div>
           </div>
         </div>
       )}

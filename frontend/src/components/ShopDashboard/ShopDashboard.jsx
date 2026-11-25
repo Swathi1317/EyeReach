@@ -175,6 +175,8 @@ export default function ShopDashboard({ shopUser, onLogout }) {
   // Vision Tests & Confirmed Optometrist Prescriptions State
   const [visionTests, setVisionTests] = useState([]);
   const [loadingVisionTests, setLoadingVisionTests] = useState(false);
+  const [visionTestRejectionModal, setVisionTestRejectionModal] = useState(null);
+  const [visionTestRejectionReason, setVisionTestRejectionReason] = useState('');
   const [assignDoctorModal, setAssignDoctorModal] = useState(null);
   const [selectedDoctorIdToAssign, setSelectedDoctorIdToAssign] = useState('');
   const [recordRxModal, setRecordRxModal] = useState(null);
@@ -351,19 +353,30 @@ export default function ShopDashboard({ shopUser, onLogout }) {
   };
 
   useEffect(() => {
-    fetchStats();
-    fetchProducts();
-    fetchOrders();
-    fetchCustomers();
-    fetchCustomerPreferences();
-    fetchDoctors();
-    fetchRealGallery();
-    fetchHomeTrials();
-    fetchVisionTests();
-    fetchProfile();
-  }, []);
+    if (isOptometrist) {
+      fetchVisionTests();
+      fetchHomeTrials();
+      fetchProfile();
+    } else {
+      fetchStats();
+      fetchProducts();
+      fetchOrders();
+      fetchCustomers();
+      fetchCustomerPreferences();
+      fetchDoctors();
+      fetchRealGallery();
+      fetchHomeTrials();
+      fetchVisionTests();
+      fetchProfile();
+    }
+  }, [isOptometrist]);
 
   useEffect(() => {
+    if (isOptometrist) {
+      if (activeTab === 'home_trials') fetchHomeTrials();
+      else if (activeTab === 'vision_tests') fetchVisionTests();
+      return;
+    }
     if (activeTab === 'inventory') {
       fetchProducts();
     } else if (activeTab === 'dashboard') {
@@ -382,7 +395,7 @@ export default function ShopDashboard({ shopUser, onLogout }) {
     } else if (activeTab === 'profile') {
       fetchProfile();
     }
-  }, [activeTab, shapeFilter, genderFilter]);
+  }, [activeTab, shapeFilter, genderFilter, isOptometrist]);
 
   // Handle AI Description Generation
   const handleGenerateDescription = async () => {
@@ -779,10 +792,17 @@ export default function ShopDashboard({ shopUser, onLogout }) {
     }
   };
 
-  const handleUpdateVisionTestStatus = async (apptId, newStatus) => {
+  const handleUpdateVisionTestStatus = async (apptId, newStatus, rejectionReason = null) => {
     try {
-      await axios.put(`/api/shop/vision-tests/${apptId}/status`, { status: newStatus }, { headers: getAuthHeaders() });
+      await axios.put(`/api/shop/vision-tests/${apptId}/status`, {
+        status: newStatus,
+        rejection_reason: rejectionReason || undefined
+      }, { headers: getAuthHeaders() });
       fetchVisionTests();
+      if (visionTestRejectionModal) {
+        setVisionTestRejectionModal(null);
+        setVisionTestRejectionReason('');
+      }
     } catch (err) {
       alert(err.response?.data?.detail || 'Failed to update vision test status.');
     }
@@ -3723,17 +3743,59 @@ export default function ShopDashboard({ shopUser, onLogout }) {
                                 fontWeight: 800,
                                 background:
                                   v.visit_status === 'Completed' ? '#dcfce7' :
-                                  v.visit_status === 'Scheduled' ? '#e0f2fe' : '#fef3c7',
+                                  v.visit_status === 'Rejected' ? '#fee2e2' :
+                                  (v.visit_status === 'Scheduled' || v.visit_status === 'Confirmed' || v.visit_status === 'Approved') ? '#e0f2fe' : '#fef3c7',
                                 color:
                                   v.visit_status === 'Completed' ? '#15803d' :
-                                  v.visit_status === 'Scheduled' ? '#0369a1' : '#b45309'
+                                  v.visit_status === 'Rejected' ? '#b91c1c' :
+                                  (v.visit_status === 'Scheduled' || v.visit_status === 'Confirmed' || v.visit_status === 'Approved') ? '#0369a1' : '#b45309'
                               }}>
                                 {v.visit_status}
                               </span>
+                              {v.rejection_reason && (
+                                <div style={{ fontSize: '0.70rem', color: '#b91c1c', fontStyle: 'italic', marginTop: '3px' }}>
+                                  Reason: "{v.rejection_reason}"
+                                </div>
+                              )}
                             </td>
 
                             <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end' }}>
+                                {!isOptometrist && (v.visit_status === 'Pending' || v.visit_status === 'Requested') && (
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button
+                                      onClick={() => handleUpdateVisionTestStatus(v.id, 'Approved')}
+                                      style={{
+                                        padding: '4px 8px',
+                                        background: '#dcfce7',
+                                        color: '#15803d',
+                                        border: '1px solid #bbf7d0',
+                                        borderRadius: '6px',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      ✓ Approve
+                                    </button>
+                                    <button
+                                      onClick={() => setVisionTestRejectionModal(v)}
+                                      style={{
+                                        padding: '4px 8px',
+                                        background: '#fee2e2',
+                                        color: '#b91c1c',
+                                        border: '1px solid #fecaca',
+                                        borderRadius: '6px',
+                                        fontSize: '0.74rem',
+                                        fontWeight: 800,
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      ✗ Reject
+                                    </button>
+                                  </div>
+                                )}
+
                                 {!isOptometrist && (
                                   <button
                                     onClick={() => {
@@ -4888,6 +4950,71 @@ export default function ShopDashboard({ shopUser, onLogout }) {
                     return;
                   }
                   handleUpdateHomeTrialStatus(trialRejectionModal.id, 'Rejected', trialRejectionReason.trim());
+                }}
+                style={{ padding: '0.5rem 1.25rem', background: '#b91c1c', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* VISION TEST REJECTION MODAL */}
+      {visionTestRejectionModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '14px',
+            width: '100%',
+            maxWidth: '480px',
+            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            border: '1px solid #e2e8f0',
+            padding: '1.75rem'
+          }}>
+            <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.15rem', fontWeight: 800, color: '#b91c1c' }}>
+              Reject Vision Test Appointment #{visionTestRejectionModal.appointment_id}
+            </h3>
+            <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.84rem' }}>
+              Please state why this vision examination request cannot be confirmed (e.g. optometrist on leave, address outside service perimeter).
+            </p>
+            <textarea
+              rows="3"
+              required
+              placeholder="e.g. Optometrist on emergency leave; please reschedule for tomorrow."
+              value={visionTestRejectionReason}
+              onChange={(e) => setVisionTestRejectionReason(e.target.value)}
+              style={{ width: '100%', padding: '0.65rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', boxSizing: 'border-box', marginBottom: '1rem' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => { setVisionTestRejectionModal(null); setVisionTestRejectionReason(''); }}
+                style={{ padding: '0.5rem 1rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', color: '#475569' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!visionTestRejectionReason.trim()) {
+                    alert('Please enter a rejection reason.');
+                    return;
+                  }
+                  handleUpdateVisionTestStatus(visionTestRejectionModal.id, 'Rejected', visionTestRejectionReason.trim());
                 }}
                 style={{ padding: '0.5rem 1.25rem', background: '#b91c1c', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}
               >

@@ -37,6 +37,8 @@ class Customer(Base):
     ipd_mm = Column(Float, nullable=True)
     skin_tone = Column(String(50), nullable=True)
     undertone = Column(String(50), nullable=True)
+    last_exam_date = Column(DateTime, nullable=True)
+    reminder_interval_months = Column(Integer, default=12)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     orders = relationship("Order", back_populates="customer")

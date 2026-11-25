@@ -48,6 +48,8 @@ def get_current_shop(authorization: Optional[str] = Header(None), db: Session = 
         # If token is invalid or expired, fallback to first shop for demo resilience
         shop = db.query(Shop).first()
         if shop:
+            shop._caller_role = "shop_owner"
+            shop._optometrist_id = None
             return shop
         raise HTTPException(status_code=401, detail="Invalid or expired token.")
 

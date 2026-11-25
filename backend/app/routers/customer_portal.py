@@ -1435,6 +1435,140 @@ def confirm_order_received(
 
 # ----------------- TWO DISTINCT HOME SERVICES (TRIAL & VISION TEST) -----------------
 
+STANDARD_HOME_SERVICE_SLOTS = [
+    {"slot_time": "09:00 AM", "label": "09:00 AM - Morning Slot", "period": "Morning"},
+    {"slot_time": "10:30 AM", "label": "10:30 AM - Morning Slot", "period": "Morning"},
+    {"slot_time": "12:00 PM", "label": "12:00 PM - Midday Slot", "period": "Midday"},
+    {"slot_time": "02:30 PM", "label": "02:30 PM - Afternoon Slot", "period": "Afternoon"},
+    {"slot_time": "04:00 PM", "label": "04:00 PM - Evening Slot", "period": "Evening"},
+    {"slot_time": "05:30 PM", "label": "05:30 PM - Evening Slot", "period": "Evening"}
+]
+
+def parse_time_to_minutes(time_str: str) -> Optional[int]:
+    """Converts '09:00 AM', '14:30', '2:30 PM' etc. to minutes from midnight."""
+    if not time_str:
+        return None
+    clean = time_str.strip().upper()
+    try:
+        if "AM" in clean or "PM" in clean:
+            t = datetime.datetime.strptime(clean, "%I:%M %p")
+            return t.hour * 60 + t.minute
+        elif ":" in clean:
+            t = datetime.datetime.strptime(clean, "%H:%M")
+            return t.hour * 60 + t.minute
+    except Exception:
+        pass
+    return None
+
+def is_slot_within_hours(slot_time: str, hours_range_str: str) -> bool:
+    """Checks if a slot falls within doctor/store operating hours."""
+    if not hours_range_str:
+        return True
+    parts = hours_range_str.split("-")
+    if len(parts) != 2:
+        return True
+    start_min = parse_time_to_minutes(parts[0])
+    end_min = parse_time_to_minutes(parts[1])
+    slot_min = parse_time_to_minutes(slot_time)
+    if start_min is not None and end_min is not None and slot_min is not None:
+        return start_min <= slot_min <= end_min
+    return True
+
+def is_doctor_on_duty_day(doctor: Doctor, target_date: datetime.date) -> bool:
+    """Checks if doctor works on the day of week corresponding to target_date."""
+    if not doctor.available_days:
+        return True
+    weekday_map = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+    day_abbr = weekday_map.get(target_date.weekday())
+    days = [d.strip() for d in doctor.available_days.split(",")]
+    return any(day_abbr.lower() in d.lower() for d in days)
+
+def calculate_slot_capacity(db: Session, shop_id: Optional[int], target_date_str: str, slot_time: str):
+    """
+    Calculates active on-duty optometrists vs non-cancelled overlapping bookings.
+    Returns: (remaining_capacity: int, total_capacity: int, booked_count: int, available_doctors: List[Doctor])
+    """
+    try:
+        t_date = datetime.date.fromisoformat(target_date_str.strip())
+    except Exception:
+        return 0, 0, 0, []
+
+    doc_query = db.query(Doctor).filter(Doctor.is_active == True)
+    if shop_id:
+        doc_query = doc_query.filter((Doctor.shop_id == shop_id) | (Doctor.shop_id == None if shop_id == 1 else False))
+    doctors = doc_query.all()
+    if not doctors:
+        doctors = db.query(Doctor).filter(Doctor.is_active == True).all()
+
+    on_duty_doctors = []
+    for d in doctors:
+        if (d.is_available is None or d.is_available == True) and is_doctor_on_duty_day(d, t_date) and is_slot_within_hours(slot_time, d.available_hours or "09:00 AM - 06:00 PM"):
+            on_duty_doctors.append(d)
+
+    total_capacity = max(1, len(on_duty_doctors))
+
+    # Query active bookings (exclude Cancelled and Rejected)
+    existing_query = db.query(Appointment).filter(
+        Appointment.appointment_date == target_date_str.strip(),
+        Appointment.appointment_time == slot_time.strip(),
+        ~Appointment.status.in_(["Cancelled", "Rejected"])
+    )
+    if shop_id:
+        existing_query = existing_query.filter((Appointment.shop_id == shop_id) | (Appointment.shop_id == None if shop_id == 1 else False))
+
+    existing_appts = existing_query.all()
+    booked_count = len(existing_appts)
+    booked_doc_ids = {a.doctor_id for a in existing_appts if a.doctor_id}
+
+    available_doctors = [d for d in on_duty_doctors if d.id not in booked_doc_ids]
+    remaining = max(0, total_capacity - booked_count)
+    return remaining, total_capacity, booked_count, available_doctors
+
+@router.get("/available-slots")
+def get_available_appointment_slots(
+    date: str = Query(..., description="Target date in YYYY-MM-DD"),
+    shop_id: Optional[int] = Query(None, description="Optical store ID"),
+    db: Session = Depends(get_db)
+):
+    """
+    Dynamically generates appointment slots for a given date and optical shop.
+    Considers store operating hours, active optometrists on duty, and existing bookings.
+    Slots with 0 remaining capacity are marked as booked/unavailable to prevent double-booking.
+    """
+    try:
+        t_date = datetime.date.fromisoformat(date.strip())
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD.")
+
+    is_past = t_date < datetime.date.today()
+    day_name = t_date.strftime("%A")
+
+    slots_result = []
+    for s in STANDARD_HOME_SERVICE_SLOTS:
+        rem, tot, bkd, avail_docs = calculate_slot_capacity(db, shop_id, date.strip(), s["slot_time"])
+        is_avail = (not is_past) and (rem > 0)
+        slots_result.append({
+            "slot_time": s["slot_time"],
+            "label": s["label"],
+            "period": s["period"],
+            "is_available": is_avail,
+            "remaining_capacity": rem if not is_past else 0,
+            "total_capacity": tot,
+            "booked_count": bkd,
+            "available_optometrists_count": len(avail_docs),
+            "status": "Available" if is_avail else ("Past Date" if is_past else "Fully Booked")
+        })
+
+    return {
+        "status": "success",
+        "date": date,
+        "day_name": day_name,
+        "is_past": is_past,
+        "shop_id": shop_id,
+        "slots": slots_result,
+        "available_slots_count": sum(1 for s in slots_result if s["is_available"])
+    }
+
 class HomeServiceBookRequest(BaseModel):
     service_type: str = "both" # "frame_trial" | "vision_test" | "both"
     shop_id: Optional[int] = None
@@ -1484,6 +1618,20 @@ def book_home_service(
     if not req.home_address.strip() or len(req.home_address.strip()) < 5:
         raise HTTPException(status_code=400, detail="Please provide a valid residential address for doorstep service.")
 
+    # 2b. Prevent double-booking for the same customer
+    clean_mob = req.mobile_number[-10:] if req.mobile_number else ""
+    existing_cust_appt = db.query(Appointment).filter(
+        (Appointment.mobile_number.endswith(clean_mob)) | (Appointment.email == req.email.strip()),
+        Appointment.appointment_date == req.appointment_date.strip(),
+        Appointment.appointment_time == req.appointment_time.strip(),
+        ~Appointment.status.in_(["Cancelled", "Rejected"])
+    ).first()
+    if existing_cust_appt:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You already have an active doorstep appointment ({existing_cust_appt.appointment_id}) booked for {req.appointment_date} at {req.appointment_time}."
+        )
+
     # 3. Determine supplying shop
     target_shop = None
     if req.shop_id:
@@ -1505,6 +1653,20 @@ def book_home_service(
     norm_service = req.service_type.lower().strip()
     if norm_service not in ["frame_trial", "vision_test", "both"]:
         norm_service = "both"
+
+    # 3b. Verify slot capacity and assign available optometrist for vision tests
+    assigned_doc = None
+    if norm_service in ["vision_test", "both"]:
+        rem, tot, bkd, avail_docs = calculate_slot_capacity(db, target_shop.id if target_shop else None, req.appointment_date.strip(), req.appointment_time.strip())
+        if rem <= 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"The selected time slot ({req.appointment_time}) on {req.appointment_date} is fully booked. Please select an available slot."
+            )
+        if avail_docs:
+            assigned_doc = avail_docs[0]
+        else:
+            assigned_doc = db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first() or db.query(Doctor).filter(Doctor.is_active == True).first()
 
     shop_title = target_shop.shop_name if target_shop else "EyeReach Partner Store"
     fa = req.face_analysis or {}
@@ -1580,7 +1742,7 @@ def book_home_service(
     # Case B: Home Vision Test (Only)
     elif norm_service == "vision_test":
         appt_num = f"HS-VT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
-        doc = db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first()
+        doc = assigned_doc or db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first()
         if not doc:
             doc = db.query(Doctor).filter(Doctor.is_active == True).first()
 
@@ -1653,7 +1815,7 @@ def book_home_service(
         appt_trial_num = f"HS-FT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
         appt_vision_num = f"HS-VT-{datetime.date.today().strftime('%Y%m%d')}-{random.randint(1000, 9999)}"
 
-        doc = db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first()
+        doc = assigned_doc or db.query(Doctor).filter(Doctor.shop_id == (target_shop.id if target_shop else 1), Doctor.is_active == True).first()
         if not doc:
             doc = db.query(Doctor).filter(Doctor.is_active == True).first()
 
@@ -1834,7 +1996,213 @@ def get_my_home_services(
         })
     return {"status": "success", "requests": results, "total": len(results)}
 
-# ----------------- NOTIFICATIONS AND REMINDERS -----------------
+# ----------------- APPOINTMENT CANCELLATION & RESCHEDULING (Requirement 5) -----------------
+
+class AppointmentCancelRequest(BaseModel):
+    reason: Optional[str] = "Customer requested cancellation"
+
+@router.put("/appointments/{id}/cancel")
+def cancel_customer_appointment(
+    id: int,
+    req: AppointmentCancelRequest = AppointmentCancelRequest(),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Allows a customer to cancel an active home service appointment.
+    Frees up the slot capacity and notifies both customer and supplying optical store.
+    """
+    appt = db.query(Appointment).filter(Appointment.id == id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found.")
+
+    if appt.status in ["Completed"]:
+        raise HTTPException(status_code=400, detail="Completed appointments cannot be cancelled.")
+
+    appt.status = "Cancelled"
+    appt.visit_status = "Cancelled"
+    appt.additional_message = f"{appt.additional_message or ''} [Cancelled by customer: {req.reason}]".strip()
+
+    clean_mob = appt.mobile_number[-10:] if appt.mobile_number else ""
+    cust = resolve_customer(current_customer, clean_mob, db)
+    if cust:
+        notif = CustomerNotification(
+            customer_id=cust.id,
+            shop_id=appt.shop_id or 1,
+            title="Appointment Cancelled",
+            message=f"Your appointment #{appt.appointment_id} for {appt.appointment_date} has been cancelled. The slot has been released and you may reschedule anytime.",
+            notification_type="appointment_cancelled",
+            reference_id=appt.appointment_id
+        )
+        db.add(notif)
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Appointment #{appt.appointment_id} has been cancelled successfully.",
+        "appointment_id": appt.appointment_id,
+        "status": appt.status
+    }
+
+class AppointmentRescheduleRequest(BaseModel):
+    new_date: str
+    new_time: str
+    reason: Optional[str] = "Customer requested reschedule"
+
+@router.put("/appointments/{id}/reschedule")
+def reschedule_customer_appointment(
+    id: int,
+    req: AppointmentRescheduleRequest,
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Allows a customer to reschedule an existing appointment to a new date/time slot.
+    Validates capacity in the target slot to prevent double-booking.
+    """
+    appt = db.query(Appointment).filter(Appointment.id == id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found.")
+
+    if appt.status in ["Completed", "Cancelled"]:
+        raise HTTPException(status_code=400, detail=f"Cannot reschedule an appointment in '{appt.status}' state.")
+
+    try:
+        new_d = datetime.date.fromisoformat(req.new_date.strip())
+        if new_d < datetime.date.today():
+            raise HTTPException(status_code=400, detail="Rescheduled date cannot be in the past.")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Expected YYYY-MM-DD.")
+
+    # Validate slot capacity
+    rem, tot, bkd, avail_docs = calculate_slot_capacity(db, appt.shop_id, req.new_date.strip(), req.new_time.strip())
+    if rem <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Slot {req.new_time} on {req.new_date} is fully booked. Please select an available slot."
+        )
+
+    old_date = appt.appointment_date
+    old_time = appt.appointment_time
+
+    appt.appointment_date = req.new_date.strip()
+    appt.appointment_time = req.new_time.strip()
+    appt.status = "Rescheduled"
+    appt.visit_status = "Rescheduled"
+    if avail_docs:
+        appt.doctor_id = avail_docs[0].id
+    appt.additional_message = f"{appt.additional_message or ''} [Rescheduled from {old_date} {old_time}: {req.reason}]".strip()
+
+    clean_mob = appt.mobile_number[-10:] if appt.mobile_number else ""
+    cust = resolve_customer(current_customer, clean_mob, db)
+    if cust:
+        notif = CustomerNotification(
+            customer_id=cust.id,
+            shop_id=appt.shop_id or 1,
+            title="Appointment Rescheduled",
+            message=f"Your appointment #{appt.appointment_id} has been rescheduled to {appt.appointment_date} at {appt.appointment_time}.",
+            notification_type="appointment_rescheduled",
+            reference_id=appt.appointment_id
+        )
+        db.add(notif)
+
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Appointment #{appt.appointment_id} rescheduled to {appt.appointment_date} at {appt.appointment_time}.",
+        "appointment_id": appt.appointment_id,
+        "appointment_date": appt.appointment_date,
+        "appointment_time": appt.appointment_time,
+        "status": appt.status
+    }
+
+# ----------------- NOTIFICATIONS AND AUTOMATED REMINDERS (Requirement 8) -----------------
+
+def sync_automated_customer_reminders(cust: Customer, db: Session):
+    """
+    Generates automated customer follow-up alerts and reminders:
+    1. Checkup due reminder based on last eye exam date or account registration
+    2. Frame refresh reminder based on last delivered order (1-year anniversary)
+    3. Cart/Wishlist follow-up if unpurchased items exist for > 7 days
+    Deduplicates reminders so the same alert isn't duplicated within 30 days.
+    """
+    now = datetime.datetime.utcnow()
+    interval_months = cust.reminder_interval_months or 12
+    cycle_days = interval_months * 30
+
+    # 1. Periodic Eye Exam Reminder
+    last_exam = cust.last_exam_date
+    if not last_exam:
+        completed_vt = db.query(Appointment).filter(
+            (Appointment.mobile_number.endswith(cust.mobile[-10:] if cust.mobile else "xyz")) | (Appointment.email == cust.email),
+            Appointment.status == "Completed"
+        ).order_by(Appointment.id.desc()).first()
+        if completed_vt and completed_vt.created_at:
+            last_exam = completed_vt.created_at
+            cust.last_exam_date = last_exam
+        elif cust.created_at:
+            last_exam = cust.created_at
+
+    if last_exam:
+        days_since_exam = (now - last_exam).days
+        if days_since_exam >= cycle_days:
+            recent_rem = db.query(CustomerNotification).filter(
+                CustomerNotification.customer_id == cust.id,
+                CustomerNotification.notification_type == "checkup_reminder",
+                CustomerNotification.created_at >= now - datetime.timedelta(days=30)
+            ).first()
+            if not recent_rem:
+                notif = CustomerNotification(
+                    customer_id=cust.id,
+                    title="Periodic Eye Checkup Due",
+                    message=f"It has been {days_since_exam // 30} months since your last recorded vision test. Routine eye exams help preserve optical clarity and ensure accurate prescription power.",
+                    notification_type="checkup_reminder"
+                )
+                db.add(notif)
+
+    # 2. Frame Replacement / 1-Year Anniversary Reminder
+    last_delivered = db.query(Order).filter(
+        Order.customer_id == cust.id,
+        Order.status.in_(["Delivered", "Customer Received"])
+    ).order_by(Order.id.desc()).first()
+
+    if last_delivered and last_delivered.created_at:
+        days_since_order = (now - last_delivered.created_at).days
+        if days_since_order >= 365:
+            recent_frame_rem = db.query(CustomerNotification).filter(
+                CustomerNotification.customer_id == cust.id,
+                CustomerNotification.notification_type == "frame_renewal",
+                CustomerNotification.created_at >= now - datetime.timedelta(days=30)
+            ).first()
+            if not recent_frame_rem:
+                notif = CustomerNotification(
+                    customer_id=cust.id,
+                    shop_id=last_delivered.shop_id or 1,
+                    title="1-Year Eyewear Renewal Reminder",
+                    message=f"Your spectacles from Order #{last_delivered.order_number} are now 1 year old! Eye-care specialists recommend an annual lens check and frame alignment to maintain crystal-clear UV defense and ergonomic comfort.",
+                    notification_type="frame_renewal",
+                    reference_id=last_delivered.order_number
+                )
+                db.add(notif)
+
+    # 3. Cart / Wishlist Follow-up Reminder
+    active_cart_count = db.query(CartItem).filter(CartItem.customer_id == cust.id).count()
+    if active_cart_count > 0:
+        recent_cart_rem = db.query(CustomerNotification).filter(
+            CustomerNotification.customer_id == cust.id,
+            CustomerNotification.notification_type == "cart_reminder",
+            CustomerNotification.created_at >= now - datetime.timedelta(days=14)
+        ).first()
+        if not recent_cart_rem:
+            notif = CustomerNotification(
+                customer_id=cust.id,
+                title="Your Handpicked Frames Are Waiting",
+                message=f"You have {active_cart_count} optical frame(s) saved in your cart. You can place your order online or request a free doorstep trial with up to 10 frames.",
+                notification_type="cart_reminder"
+            )
+            db.add(notif)
+
+    db.commit()
 
 @router.get("/notifications")
 def get_customer_notifications(
@@ -1846,7 +2214,13 @@ def get_customer_notifications(
     if not cust:
         return {"status": "success", "notifications": [], "unread_count": 0}
 
-    # Ensure automated periodic eye checkup reminder exists
+    # Automatically synchronize periodic reminders and follow-ups
+    try:
+        sync_automated_customer_reminders(cust, db)
+    except Exception as e:
+        logger.warning(f"Automated reminder sync failed: {e}")
+
+    # Ensure baseline welcome reminder exists
     checkup_rem = db.query(CustomerNotification).filter(
         CustomerNotification.customer_id == cust.id,
         CustomerNotification.notification_type == "reminder"
@@ -1916,6 +2290,32 @@ def mark_all_notifications_read(
         db.commit()
     return {"status": "success", "message": "All notifications marked as read."}
 
+class ReminderSettingsRequest(BaseModel):
+    reminder_interval_months: int # e.g. 6 or 12
+
+@router.post("/reminders/settings")
+def update_reminder_settings(
+    req: ReminderSettingsRequest,
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """Configures customer periodic eye checkup reminder interval (e.g. 6 or 12 months)."""
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    if not cust:
+        raise HTTPException(status_code=401, detail="Customer login required.")
+    
+    if req.reminder_interval_months not in [3, 6, 9, 12, 18, 24]:
+        raise HTTPException(status_code=400, detail="Reminder interval must be 3, 6, 9, 12, 18, or 24 months.")
+
+    cust.reminder_interval_months = req.reminder_interval_months
+    db.commit()
+    return {
+        "status": "success",
+        "message": f"Eye checkup reminder cycle updated to every {req.reminder_interval_months} months.",
+        "reminder_interval_months": cust.reminder_interval_months
+    }
+
 @router.post("/reminders/checkup")
 def schedule_eye_checkup_reminder(
     months: int = 6,
@@ -1936,4 +2336,80 @@ def schedule_eye_checkup_reminder(
     db.add(notif)
     db.commit()
     return {"status": "success", "message": f"Eye checkup reminder scheduled for {months} months."}
+
+# ----------------- IN-STOCK PERSONALIZED SUGGESTIONS (Requirement 8) -----------------
+
+@router.get("/personalized-suggestions")
+def get_personalized_suggestions(
+    customer_mobile: Optional[str] = Query(None),
+    current_customer: Optional[Customer] = Depends(get_current_customer),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns personalized spectacle frame recommendations based on customer's face shape and curated picks.
+    STRICT MENTOR REQUIREMENT: Must strictly suggest products that are IN STOCK (stock_quantity > 0 and is_active == True).
+    """
+    cust = resolve_customer(current_customer, customer_mobile, db)
+    
+    face_shape = None
+    if cust and cust.face_shape:
+        face_shape = cust.face_shape
+
+    if not face_shape and cust:
+        last_appt = db.query(Appointment).filter(
+            (Appointment.mobile_number.endswith(cust.mobile[-10:] if cust.mobile else "xyz")) | (Appointment.email == cust.email),
+            Appointment.face_shape != None
+        ).order_by(Appointment.id.desc()).first()
+        if last_appt:
+            face_shape = last_appt.face_shape
+
+    shape_compat_map = {
+        "Oval": ["Square", "Rectangle", "Geometric", "Round"],
+        "Round": ["Rectangle", "Square", "Geometric"],
+        "Square": ["Round", "Oval", "Cat Eye"],
+        "Heart": ["Round", "Oval", "Rectangle"],
+        "Diamond": ["Oval", "Cat Eye", "Round"],
+        "Oblong": ["Square", "Round", "Geometric"]
+    }
+    preferred_shapes = shape_compat_map.get(face_shape, ["Round", "Rectangle", "Square", "Geometric"])
+
+    in_stock_query = db.query(Product).filter(
+        Product.is_active == True,
+        Product.stock_quantity > 0
+    )
+
+    matching_products = in_stock_query.filter(Product.shape.in_(preferred_shapes)).limit(8).all()
+    if len(matching_products) < 4:
+        fallback_products = in_stock_query.limit(8).all()
+        matching_products = list({p.id: p for p in (matching_products + fallback_products)}.values())[:6]
+
+    suggestions = []
+    for p in matching_products:
+        dims = f"{int(p.lens_width_mm or 50)}-{int(p.bridge_width_mm or 18)}-{int(p.temple_length_mm or 140)} mm" if p.lens_width_mm else (p.size or "50-18-140 mm")
+        match_reason = f"Ideal {p.shape} geometry balancing {face_shape} face contours" if face_shape else f"Trending {p.shape} silhouette in high customer demand"
+        suggestions.append({
+            "id": p.id,
+            "product_id": p.product_id,
+            "name": p.name,
+            "brand": p.brand,
+            "shape": p.shape,
+            "material": p.material,
+            "color": p.color,
+            "price": p.price,
+            "front_image": p.front_image,
+            "stock_quantity": p.stock_quantity,
+            "in_stock": True,
+            "dimensions": dims,
+            "shop_id": p.shop_id,
+            "shop_name": p.shop.shop_name if p.shop else "EyeReach Partner Store",
+            "match_reason": match_reason
+        })
+
+    return {
+        "status": "success",
+        "face_shape": face_shape or "Standard",
+        "total_suggestions": len(suggestions),
+        "suggestions": suggestions
+    }
+
 

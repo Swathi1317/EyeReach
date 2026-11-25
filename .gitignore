@@ -12,3 +12,5 @@ cloudflared.exe
 *.exe
 scratch/
 smartframe.db
+backend/data/*.db
+backend/data/uploads/
